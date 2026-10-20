@@ -1,0 +1,94 @@
+{
+  "testers": {
+    "1552152527271759872": {
+      "username": "@4help | Kindstone",
+      "tests": 14,
+      "gamemodes": {
+        "mace": 14
+      }
+    },
+    "1010807229202563093": {
+      "username": "Sword Dia \u3005 wr3kx",
+      "tests": 4,
+      "gamemodes": {
+        "sword": 4
+      }
+    },
+    "919987770397708340": {
+      "username": "ZGoat | Halt",
+      "tests": 31,
+      "gamemodes": {
+        "sword": 18,
+        "uhc": 4,
+        "nethop": 9
+      }
+    },
+    "1542971203919028337": {
+      "username": "Cpvp \u3005ItzKingMcc",
+      "tests": 2,
+      "gamemodes": {
+        "vanilla": 2
+      }
+    },
+    "1355126879564206120": {
+      "username": "\u2727VoidEternae\u2727 \ufe3b\u30c7\u2550\u4e00",
+      "tests": 4,
+      "gamemodes": {
+        "mace": 4
+      }
+    },
+    "1404387345481994321": {
+      "username": "721ms",
+      "tests": 6,
+      "gamemodes": {
+        "mace": 5,
+        "sword": 1
+      }
+    },
+    "1401231998160212058": {
+      "username": "Veiled",
+      "tests": 2,
+      "gamemodes": {
+        "sword": 2
+      }
+    },
+    "1095663522962210896": {
+      "username": "Add to all ht3 and purge",
+      "tests": 4,
+      "gamemodes": {
+        "nethop": 4
+      }
+    },
+    "1535018806706044948": null,
+    "1319638493038641163": {
+      "username": "EU | Zolari",
+      "tests": 7,
+      "gamemodes": {
+        "sword": 7
+      }
+    },
+    "1292074432776507434": {
+      "username": "AS | ayyannomi",
+      "tests": 15,
+      "gamemodes": {
+        "mace": 15
+      }
+    },
+    "1416444757626064996": {
+      "username": "AS | Pvt_Ankit",
+      "tests": 3,
+      "gamemodes": {
+        "uhc": 3
+      }
+    },
+    "1497188329412886588": {
+      "username": "\ud835\udc2f\ud835\udc1a\ud835\udc29\ud835\udc1e",
+      "tests": 16,
+      "gamemodes": {
+        "mace": 6,
+        "smp": 3,
+        "uhc": 7
+      }
+    }
+  }
+}

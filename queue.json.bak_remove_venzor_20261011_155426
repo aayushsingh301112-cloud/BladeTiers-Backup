@@ -1,0 +1,1007 @@
+{
+  "axe": [],
+  "sword": [],
+  "vanilla": [],
+  "smp": [],
+  "pot": [],
+  "mace": [],
+  "nethop": [],
+  "uhc": [],
+  "spear": [],
+  "vanilla_panel_message_id": 1553788017976672407,
+  "mace_panel_message_id": 1558860906425884673,
+  "sword_panel_message_id": 1558466911782838368,
+  "nethop_waitlist": [
+    {
+      "user_id": "1376765496166449173",
+      "username": "ThundererFr",
+      "region": "AS"
+    },
+    {
+      "user_id": "1394948604329988136",
+      "username": "StormyUwU_",
+      "region": "AS"
+    },
+    {
+      "user_id": "983689685505282090",
+      "username": "GamerRKM",
+      "region": "AS"
+    },
+    {
+      "user_id": "1507703003140849765",
+      "username": "Cr1ttts",
+      "region": "MEA"
+    },
+    {
+      "user_id": "1405404944269443092",
+      "username": "Nero_House",
+      "region": "AS"
+    },
+    {
+      "user_id": "1243490509259804742",
+      "username": "NotDexyyy",
+      "region": "AS"
+    },
+    {
+      "user_id": "1391369438103863357",
+      "username": "KirkIsBetter",
+      "region": "AS"
+    },
+    {
+      "user_id": "1541399790229790743",
+      "username": "OX_PlayZ_25",
+      "region": "AS"
+    },
+    {
+      "user_id": "1402686317699141682",
+      "username": "S4kiXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "999201498049282138",
+      "username": "SycoBeast_YT",
+      "region": "AS"
+    },
+    {
+      "user_id": "1365684092447756379",
+      "username": "GhostSlayerr",
+      "region": "AS"
+    },
+    {
+      "user_id": "1504717527937187955",
+      "username": "EnderVexYT3",
+      "region": "AS"
+    },
+    {
+      "user_id": "1401231998160212058",
+      "username": "GoopyJeff434",
+      "region": "AS"
+    },
+    {
+      "user_id": "1346738706953932810",
+      "username": "chiragprooo",
+      "region": "AS"
+    },
+    {
+      "user_id": "1487753158116511805",
+      "username": "Mommypigpro",
+      "region": "AS"
+    },
+    {
+      "user_id": "1365507135152328704",
+      "username": "3p0ts_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1483077325213008016",
+      "username": "R0BIN_XD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1455978991457406988",
+      "username": "MissOverdose",
+      "region": "AS"
+    },
+    {
+      "user_id": "1544172449598414868",
+      "username": "Icey_gamerXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1292446173067481140",
+      "username": "ChronoTMTG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
+      "region": "AS"
+    },
+    {
+      "user_id": "1519058690521432249",
+      "username": "Ayan_x",
+      "region": "AS"
+    },
+    {
+      "user_id": "1552619219739349003",
+      "username": "itz_rachit",
+      "region": "AS"
+    },
+    {
+      "user_id": "1514867326405836826",
+      "username": "Pedro_Bennn",
+      "region": "AS"
+    },
+    {
+      "user_id": "1395044090307149824",
+      "username": "ZenzaiYT",
+      "region": "AS"
+    },
+    {
+      "user_id": "1371361069997621318",
+      "username": "Nymox07",
+      "region": "AS"
+    },
+    {
+      "user_id": "1160246659574407209",
+      "username": "AsadPLAYZx",
+      "region": "AS"
+    },
+    {
+      "user_id": "1527226833492250707",
+      "username": "itz_K3nzo",
+      "region": "AS"
+    },
+    {
+      "user_id": "1517369202854592728",
+      "username": "sethzax",
+      "region": "AS"
+    }
+  ],
+  "mace_waitlist": [
+    {
+      "user_id": "1378390055936331908",
+      "username": "Xione",
+      "region": "AS"
+    },
+    {
+      "user_id": "1512436855772155995",
+      "username": "coolboy100",
+      "region": "AS"
+    },
+    {
+      "user_id": "1532635055728361528",
+      "username": "BL4ZYY",
+      "region": "AS"
+    },
+    {
+      "user_id": "1078634373961752706",
+      "username": "Ellethal",
+      "region": "AS"
+    },
+    {
+      "user_id": "1402686317699141682",
+      "username": "S4kiXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1526605507047985393",
+      "username": "Crexy_Playz",
+      "region": "AS"
+    },
+    {
+      "user_id": "983689685505282090",
+      "username": "GamerRKM",
+      "region": "AS"
+    },
+    {
+      "user_id": "1311514736428580956",
+      "username": "SrujanWasAlive",
+      "region": "AS"
+    },
+    {
+      "user_id": "1508495902057300159",
+      "username": "LightningZyro",
+      "region": "AS"
+    },
+    {
+      "user_id": "1365507135152328704",
+      "username": "3p0ts_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1543968754734735412",
+      "username": "OrenGoated",
+      "region": "AS"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1435282207915642880",
+      "username": "DatOneFr0g",
+      "region": "EU"
+    },
+    {
+      "user_id": "1395044090307149824",
+      "username": "ZenzaiYT",
+      "region": "AS"
+    },
+    {
+      "user_id": "1544172449598414868",
+      "username": "Icey_gamerXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1292446173067481140",
+      "username": "ChronoTMTG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1165670580775833702",
+      "username": "NOT__JAYY",
+      "region": "AS"
+    },
+    {
+      "user_id": "1419169692970651728",
+      "username": "inaam_extra",
+      "region": "AS"
+    },
+    {
+      "user_id": "1535018806706044948",
+      "username": "Cluxtched",
+      "region": "EU"
+    },
+    {
+      "user_id": "1517369202854592728",
+      "username": "sethzax",
+      "region": "AS"
+    },
+    {
+      "user_id": "1557420034283012158",
+      "username": "Drooms",
+      "region": "AS"
+    },
+    {
+      "user_id": "1553025111635009767",
+      "username": "ItzBerocklaYT",
+      "region": "AS"
+    },
+    {
+      "user_id": "1334552723173150742",
+      "username": "RyotaXz",
+      "region": "AS"
+    },
+    {
+      "user_id": "1218481943885385778",
+      "username": "Xylos_LX",
+      "region": "AS"
+    },
+    {
+      "user_id": "1122787654996598834",
+      "username": "LIVINGDR4GON",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
+      "region": "AS"
+    },
+    {
+      "user_id": "1160210811730534510",
+      "username": "Gamerzsmarty547",
+      "region": "AS"
+    }
+  ],
+  "sword_waitlist": [
+    {
+      "user_id": "1359186600797671507",
+      "username": "just2tick",
+      "region": "AS"
+    },
+    {
+      "user_id": "1512436855772155995",
+      "username": "coolboy100",
+      "region": "AS"
+    },
+    {
+      "user_id": "1523993488482369639",
+      "username": "Itz__Riptide",
+      "region": "AS"
+    },
+    {
+      "user_id": "1532807293731733630",
+      "username": "_spiderx_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1522285876527366399",
+      "username": "Sweatplayz",
+      "region": "EU"
+    },
+    {
+      "user_id": "1078634373961752706",
+      "username": "Ellethal",
+      "region": "AS"
+    },
+    {
+      "user_id": "1402686317699141682",
+      "username": "S4kiXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1482669604684697620",
+      "username": "AyanPlayz12",
+      "region": "AS"
+    },
+    {
+      "user_id": "1224533175536189543",
+      "username": "Bossclass_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1376765496166449173",
+      "username": "ThundererFr",
+      "region": "AS"
+    },
+    {
+      "user_id": "1502413576617594890",
+      "username": "lamemaseng",
+      "region": "AS"
+    },
+    {
+      "user_id": "1401231998160212058",
+      "username": "GoopyJeff434",
+      "region": "AS"
+    },
+    {
+      "user_id": "1331963329245216861",
+      "username": "RealNicodem",
+      "region": "AS"
+    },
+    {
+      "user_id": "1487753158116511805",
+      "username": "Mommypigpro",
+      "region": "AS"
+    },
+    {
+      "user_id": "1555239699629744232",
+      "username": "Sezarlons",
+      "region": "EU"
+    },
+    {
+      "user_id": "1505941816334356561",
+      "username": "Sam_Fer18",
+      "region": "AS"
+    },
+    {
+      "user_id": "1455978991457406988",
+      "username": "MissOverdose",
+      "region": "AS"
+    },
+    {
+      "user_id": "1378390055936331908",
+      "username": "Xione",
+      "region": "AS"
+    },
+    {
+      "user_id": "1543968754734735412",
+      "username": "OrenGoated",
+      "region": "AS"
+    },
+    {
+      "user_id": "1095663522962210896",
+      "username": "Qsethfallight",
+      "region": "AS"
+    },
+    {
+      "user_id": "1435282207915642880",
+      "username": "DatOneFr0g",
+      "region": "EU"
+    },
+    {
+      "user_id": "1438439780772741162",
+      "username": "shakhawathoss069",
+      "region": "AS"
+    },
+    {
+      "user_id": "1544172449598414868",
+      "username": "Icey_gamerXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1292446173067481140",
+      "username": "ChronoTMTG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1449665911886712973",
+      "username": "Mogambo00z",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
+      "region": "AS"
+    },
+    {
+      "user_id": "1519058690521432249",
+      "username": "Ayan_x",
+      "region": "AS"
+    },
+    {
+      "user_id": "1372941127560335360",
+      "username": "zCrafteePlayzZzz",
+      "region": "MEA"
+    },
+    {
+      "user_id": "1517369202854592728",
+      "username": "sethzax",
+      "region": "AS"
+    },
+    {
+      "user_id": "1468181586372464714",
+      "username": "32yu",
+      "region": "EU"
+    },
+    {
+      "user_id": "1436243219733155872",
+      "username": "proganggamer",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319638493038641163",
+      "username": "Suzoffical",
+      "region": "EU"
+    },
+    {
+      "user_id": "1526093522267013120",
+      "username": "DREWINXGS",
+      "region": "AS"
+    },
+    {
+      "user_id": "1416444757626064996",
+      "username": "Pvt_Ankit",
+      "region": "AS"
+    },
+    {
+      "user_id": "1516773265698459793",
+      "username": "VenzorDragon",
+      "region": "AS"
+    },
+    {
+      "user_id": "1557420034283012158",
+      "username": "Drooms",
+      "region": "AS"
+    },
+    {
+      "user_id": "1477522507689889873",
+      "username": "IllegalLegendOP",
+      "region": "AS"
+    },
+    {
+      "user_id": "1430937900148719638",
+      "username": "MrAnderson99368",
+      "region": "AS"
+    },
+    {
+      "user_id": "1404151478930772099",
+      "username": "ShadowXDx_x",
+      "region": "AS"
+    }
+  ],
+  "axe_waitlist": [
+    {
+      "user_id": "1394948604329988136",
+      "username": "StormyUwU_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1535018806706044948",
+      "username": "Cluxtched",
+      "region": "EU"
+    },
+    {
+      "user_id": "983689685505282090",
+      "username": "GamerRKM",
+      "region": "AS"
+    },
+    {
+      "user_id": "1348667519208128585",
+      "username": "AsgharXLegend",
+      "region": "AS"
+    },
+    {
+      "user_id": "1522285876527366399",
+      "username": "Sweatplayz",
+      "region": "EU"
+    },
+    {
+      "user_id": "1391369438103863357",
+      "username": "KirkIsBetter",
+      "region": "AS"
+    },
+    {
+      "user_id": "1355126879564206120",
+      "username": "VoidEternae",
+      "region": "AS"
+    },
+    {
+      "user_id": "1371361069997621318",
+      "username": "Nymox07",
+      "region": "AS"
+    },
+    {
+      "user_id": "1334552723173150742",
+      "username": "RyotaXz",
+      "region": "AS"
+    },
+    {
+      "user_id": "1477522507689889873",
+      "username": "IllegalLegendOP",
+      "region": "AS"
+    },
+    {
+      "user_id": "1331963329245216861",
+      "username": "RealNicodem",
+      "region": "AS"
+    },
+    {
+      "user_id": "1487753158116511805",
+      "username": "Mommypigpro",
+      "region": "AS"
+    },
+    {
+      "user_id": "1544172449598414868",
+      "username": "Icey_gamerXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1338444396869320710",
+      "username": "NextLord_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1404387345481994321",
+      "username": "Xotic7_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1516773265698459793",
+      "username": "VenzorDragon",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319638493038641163",
+      "username": "Suzoffical",
+      "region": "EU"
+    },
+    {
+      "user_id": "1517369202854592728",
+      "username": "sethzax",
+      "region": "AS"
+    },
+    {
+      "user_id": "1552619219739349003",
+      "username": "itz_rachit",
+      "region": "AS"
+    },
+    {
+      "user_id": "1557420034283012158",
+      "username": "Drooms",
+      "region": "AS"
+    },
+    {
+      "user_id": "1416444757626064996",
+      "username": "Pvt_Ankit",
+      "region": "AS"
+    }
+  ],
+  "pot_waitlist": [
+    {
+      "user_id": "1394948604329988136",
+      "username": "StormyUwU_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1535018806706044948",
+      "username": "Cluxtched",
+      "region": "EU"
+    },
+    {
+      "user_id": "1512436855772155995",
+      "username": "coolboy100",
+      "region": "AS"
+    },
+    {
+      "user_id": "983689685505282090",
+      "username": "GamerRKM",
+      "region": "AS"
+    },
+    {
+      "user_id": "1348667519208128585",
+      "username": "AsgharXLegend",
+      "region": "AS"
+    },
+    {
+      "user_id": "1391369438103863357",
+      "username": "KirkIsBetter",
+      "region": "AS"
+    },
+    {
+      "user_id": "1477522507689889873",
+      "username": "IllegalLegendOP",
+      "region": "AS"
+    },
+    {
+      "user_id": "1544172449598414868",
+      "username": "Icey_gamerXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1292446173067481140",
+      "username": "ChronoTMTG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1516773265698459793",
+      "username": "VenzorDragon",
+      "region": "AS"
+    },
+    {
+      "user_id": "1517369202854592728",
+      "username": "sethzax",
+      "region": "AS"
+    },
+    {
+      "user_id": "1557420034283012158",
+      "username": "Drooms",
+      "region": "AS"
+    }
+  ],
+  "smp_waitlist": [
+    {
+      "user_id": "1368989336627970130",
+      "username": "Zenthx_Depressed",
+      "region": "AS"
+    },
+    {
+      "user_id": "1391369438103863357",
+      "username": "KirkIsBetter",
+      "region": "AS"
+    },
+    {
+      "user_id": "1512436855772155995",
+      "username": "coolboy100",
+      "region": "AS"
+    },
+    {
+      "user_id": "1404387345481994321",
+      "username": "Xotic7_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1435282207915642880",
+      "username": "DatOneFr0g",
+      "region": "EU"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1359186600797671507",
+      "username": "just2tick",
+      "region": "AS"
+    },
+    {
+      "user_id": "1292446173067481140",
+      "username": "ChronoTMTG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
+      "region": "AS"
+    },
+    {
+      "user_id": "1224533175536189543",
+      "username": "Bossclass_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1557420034283012158",
+      "username": "Drooms",
+      "region": "AS"
+    },
+    {
+      "user_id": "1535018806706044948",
+      "username": "Cluxtched",
+      "region": "EU"
+    },
+    {
+      "user_id": "1404151478930772099",
+      "username": "ShadowXDx_x",
+      "region": "AS"
+    },
+    {
+      "user_id": "1371361069997621318",
+      "username": "Nymox07",
+      "region": "AS"
+    }
+  ],
+  "uhc_waitlist": [
+    {
+      "user_id": "1394948604329988136",
+      "username": "StormyUwU_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1359186600797671507",
+      "username": "just2tick",
+      "region": "AS"
+    },
+    {
+      "user_id": "983689685505282090",
+      "username": "GamerRKM",
+      "region": "AS"
+    },
+    {
+      "user_id": "1348667519208128585",
+      "username": "AsgharXLegend",
+      "region": "AS"
+    },
+    {
+      "user_id": "1541399790229790743",
+      "username": "OX_PlayZ_25",
+      "region": "AS"
+    },
+    {
+      "user_id": "969851236230791189",
+      "username": "Biryani_Bomber",
+      "region": "AS"
+    },
+    {
+      "user_id": "1512436855772155995",
+      "username": "coolboy100",
+      "region": "AS"
+    },
+    {
+      "user_id": "1401231998160212058",
+      "username": "GoopyJeff434",
+      "region": "AS"
+    },
+    {
+      "user_id": "1487753158116511805",
+      "username": "Mommypigpro",
+      "region": "AS"
+    },
+    {
+      "user_id": "1477522507689889873",
+      "username": "IllegalLegendOP",
+      "region": "AS"
+    },
+    {
+      "user_id": "1544172449598414868",
+      "username": "Icey_gamerXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1311514736428580956",
+      "username": "SrujanWasAlive",
+      "region": "AS"
+    },
+    {
+      "user_id": "1405404944269443092",
+      "username": "Nero_House",
+      "region": "AS"
+    },
+    {
+      "user_id": "1464463204494344377",
+      "username": "DARKDEVILXD01",
+      "region": "AS"
+    },
+    {
+      "user_id": "1519058690521432249",
+      "username": "Ayan_x",
+      "region": "AS"
+    },
+    {
+      "user_id": "1227311753755492412",
+      "username": "Ryuken_oi",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319638493038641163",
+      "username": "Suzoffical",
+      "region": "EU"
+    },
+    {
+      "user_id": "1517369202854592728",
+      "username": "sethzax",
+      "region": "AS"
+    }
+  ],
+  "vanilla_waitlist": [
+    {
+      "user_id": "1535018806706044948",
+      "username": "Cluxtched",
+      "region": "EU"
+    },
+    {
+      "user_id": "1359186600797671507",
+      "username": "just2tick",
+      "region": "AS"
+    },
+    {
+      "user_id": "983689685505282090",
+      "username": "GamerRKM",
+      "region": "AS"
+    },
+    {
+      "user_id": "1522285876527366399",
+      "username": "Sweatplayz",
+      "region": "EU"
+    },
+    {
+      "user_id": "1507322082264875139",
+      "username": "wrxtrd",
+      "region": "AS"
+    },
+    {
+      "user_id": "1391369438103863357",
+      "username": "KirkIsBetter",
+      "region": "AS"
+    },
+    {
+      "user_id": "1523668687633125474",
+      "username": "MR_GLADBOY",
+      "region": "AS"
+    },
+    {
+      "user_id": "1412797554021765282",
+      "username": "ZROX_CZ",
+      "region": "AS"
+    },
+    {
+      "user_id": "1331963329245216861",
+      "username": "RealNicodem",
+      "region": "AS"
+    },
+    {
+      "user_id": "1487753158116511805",
+      "username": "Mommypigpro",
+      "region": "AS"
+    },
+    {
+      "user_id": "1247379014826332192",
+      "username": "Cpvpdestroyer",
+      "region": "AS"
+    },
+    {
+      "user_id": "1365507135152328704",
+      "username": "3p0ts_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1477522507689889873",
+      "username": "IllegalLegendOP",
+      "region": "AS"
+    },
+    {
+      "user_id": "1555239699629744232",
+      "username": "Sezarlons",
+      "region": "EU"
+    },
+    {
+      "user_id": "1311514736428580956",
+      "username": "SrujanWasAlive",
+      "region": "AS"
+    },
+    {
+      "user_id": "1397509272828379230",
+      "username": "RoulettSlayer",
+      "region": "AS"
+    },
+    {
+      "user_id": "1416444757626064996",
+      "username": "Pvt_Ankit",
+      "region": "AS"
+    },
+    {
+      "user_id": "1544172449598414868",
+      "username": "Icey_gamerXD",
+      "region": "AS"
+    },
+    {
+      "user_id": "1489510066850893865",
+      "username": "ItzMuneebOP_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1292446173067481140",
+      "username": "ChronoTMTG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1165670580775833702",
+      "username": "NOT__JAYY",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
+      "region": "AS"
+    },
+    {
+      "user_id": "1538872575688572958",
+      "username": "taha3mkw",
+      "region": "EU"
+    },
+    {
+      "user_id": "1517369202854592728",
+      "username": "sethzax",
+      "region": "AS"
+    },
+    {
+      "user_id": "1534064521793241172",
+      "username": "Neemo_xp",
+      "region": "EU"
+    },
+    {
+      "user_id": "1495188887084208168",
+      "username": "speed5566op",
+      "region": "AS"
+    },
+    {
+      "user_id": "1404151478930772099",
+      "username": "ShadowXDx_x",
+      "region": "AS"
+    },
+    {
+      "user_id": "1492879229900029972",
+      "username": "sinh123",
+      "region": "AS"
+    }
+  ],
+  "vanilla_closed_message_id": 1553796409122230315,
+  "nethop_panel_message_id": 1558574432732057681,
+  "smp_panel_message_id": 1558130255858892911,
+  "uhc_panel_message_id": 1555925338100596871,
+  "uhc_closed_message_id": 1555935347769221183,
+  "smp_closed_message_id": 1558353782222487644,
+  "sword_closed_message_id": 1558468287837376563,
+  "nethop_closed_message_id": 1558595526923132939,
+  "mace_currently_testing": [
+    "VenzorDragon"
+  ],
+  "mace_closed_message_id": 1558869427028627458
+}

@@ -1,0 +1,172 @@
+import io
+import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+import discord
+from PIL import Image, ImageDraw, ImageFont
+
+
+class BladeTiersStatus:
+    def __init__(self, bot, channel_id):
+        self.bot = bot
+        self.channel_id = channel_id
+        self.started_at = datetime.now(ZoneInfo("Asia/Kolkata"))
+        self.started_mono = time.monotonic()
+        self.latencies = []
+
+    def make_graph(self, latency, average, uptime):
+        self.latencies.append(latency)
+        self.latencies[:] = self.latencies[-10:]
+
+        W, H = 1600, 500
+        bg = "#070b0d"
+        green = "#00e987"
+        muted = "#8095a2"
+        white = "#edf3f5"
+        grid = "#142328"
+        dim = "#203239"
+
+        im = Image.new("RGB", (W, H), bg)
+        d = ImageDraw.Draw(im)
+
+        def font(size, bold=False):
+            paths = [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
+                if bold else
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+                "/usr/share/fonts/truetype/liberation2/LiberationMono-Bold.ttf"
+                if bold else
+                "/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf",
+            ]
+            for p in paths:
+                try:
+                    return ImageFont.truetype(p, size)
+                except OSError:
+                    pass
+            return ImageFont.load_default()
+
+        small = font(17, True)
+        label = font(21)
+        value = font(34)
+        giant = font(112, True)
+        tiny = font(13)
+
+        # Background grid and green frame
+        for x in range(0, W, 230):
+            d.line((x, 0, x, H), fill="#0e191d", width=1)
+        for y in range(35, H, 105):
+            d.line((0, y, W, y), fill="#101c20", width=1)
+        d.rectangle((2, 2, W-3, H-3), outline=green, width=3)
+        d.rectangle((0, 0, 10, H), fill=green)
+
+        # Header
+        d.text((62, 35), "BLADETIERS", font=small, fill=muted)
+        d.ellipse((1435, 42, 1450, 57), fill=green)
+        d.text((1465, 36), "LIVE", font=small, fill=green)
+        d.text((60, 70), "ONLINE", font=giant, fill=green)
+        # Muted trailing E echo
+        d.text((465, 70), "E", font=giant, fill="#10201d")
+
+        # Main metrics row
+        d.line((10, 235, W-3, 235), fill=grid, width=2)
+        d.line((500, 260, 500, 350), fill=grid, width=2)
+        d.line((1015, 260, 1015, 350), fill=grid, width=2)
+
+        elapsed = max(0, int(uptime))
+        hours, rem = divmod(elapsed, 3600)
+        mins, secs = divmod(rem, 60)
+        uptime_text = f"{hours}h {mins}m {secs}s"
+        restart = self.started_at.strftime("%d %b %Y %H:%M")
+
+        d.text((62, 260), "UPTIME", font=label, fill=muted)
+        d.text((62, 300), uptime_text, font=value, fill=white)
+
+        d.text((550, 260), "LATENCY", font=label, fill=muted)
+        d.text((550, 300), f"{latency}ms", font=value, fill=white)
+        for i in range(10):
+            x = 705 + i * 23
+            d.rectangle((x, 305, x+16, 338),
+                        fill=green if i < min(10, max(1, latency // 80)) else dim)
+
+        d.text((1060, 260), "LAST RESTART", font=label, fill=muted)
+        d.text((1060, 300), restart, font=value, fill=white)
+
+        # Bottom metrics row
+        d.line((10, 370, W-3, 370), fill=grid, width=2)
+        d.line((590, 390, 590, 465), fill=grid, width=2)
+        d.line((920, 390, 920, 465), fill=grid, width=2)
+        d.line((1230, 390, 1230, 465), fill=grid, width=2)
+
+        d.text((62, 390), "PING HISTORY", font=label, fill=muted)
+        for i, sample in enumerate(self.latencies[-10:]):
+            x = 65 + i * 25
+            bar_color = green if sample < 150 else "#e5b84b" if sample < 300 else "#e56b6b"
+            d.rectangle((x, 425, x+18, 452), fill=bar_color)
+        d.text((325, 426), "(last 10 readings)", font=tiny, fill=muted)
+
+        d.text((635, 390), "AVG LATENCY", font=label, fill=muted)
+        d.rounded_rectangle((635, 420, 825, 460), radius=6, outline=green, width=2)
+        d.text((651, 425), f"{average}ms", font=label, fill=white)
+
+        d.text((965, 390), "SERVER REGIONS", font=label, fill=muted)
+        d.rounded_rectangle((965, 420, 1195, 460), radius=6, outline=green, width=2)
+        d.text((982, 425), "AS / ME / EU", font=label, fill=white)
+
+        d.text((1360, 470), "UPDATED JUST NOW", font=tiny, fill=muted)
+
+        buf = io.BytesIO()
+        im.save(buf, "PNG", optimize=True)
+        buf.seek(0)
+        return buf
+
+    async def update(self):
+        latency = max(0, round(self.bot.latency * 1000))
+        uptime = time.monotonic() - self.started_mono
+        samples = self.latencies[-9:] + [latency]
+        average = round(sum(samples) / len(samples))
+
+        image = self.make_graph(latency, average, uptime)
+        elapsed = max(0, int(uptime))
+        hours, rem = divmod(elapsed, 3600)
+        mins, secs = divmod(rem, 60)
+
+        embed = discord.Embed(color=0x00E987)
+        embed.add_field(
+            name="Uptime",
+            value=f"`{hours}h {mins}m {secs}s`",
+            inline=True,
+        )
+        embed.add_field(
+            name="Latency",
+            value=f"`{latency}ms` avg `{average}ms`",
+            inline=True,
+        )
+        embed.add_field(
+            name="LAST RESTART",
+            value=f"`{self.started_at.strftime('%d %b %Y %H:%M')}`",
+            inline=True,
+        )
+
+        history = self.latencies[-10:]
+        bars = "".join(
+            "▰" for _ in history
+        ) or "Collecting readings..."
+        embed.add_field(
+            name="Ping History",
+            value=f"`{bars}`\n*(last 10 readings)*",
+            inline=True,
+        )
+        embed.add_field(
+            name="Today's Uptime",
+            value="`Not yet tracked`",
+            inline=True,
+        )
+        embed.set_image(url="attachment://bladetiers_status.png")
+        embed.set_footer(text="BladeTiers • Refreshes every 60 seconds")
+
+        file = discord.File(image, filename="bladetiers_status.png")
+        channel = self.bot.get_channel(self.channel_id)
+        if channel is None:
+            channel = await self.bot.fetch_channel(self.channel_id)
+        return channel, embed, file

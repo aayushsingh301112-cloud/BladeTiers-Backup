@@ -1,0 +1,115 @@
+import io
+import time
+from datetime import datetime
+
+import discord
+from PIL import Image, ImageDraw, ImageFont
+
+
+class BladeTiersStatus:
+    def __init__(self, bot, channel_id):
+        self.bot = bot
+        self.channel_id = channel_id
+        self.started_at = datetime.now().astimezone()
+        self.started_mono = time.monotonic()
+        self.latencies = []
+
+    def make_graph(self, latency, average, uptime):
+        self.latencies.append(latency)
+        self.latencies[:] = self.latencies[-12:]
+
+        image = Image.new("RGB", (960, 360), "#10131b")
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.load_default()
+
+        draw.rounded_rectangle(
+            (18, 18, 942, 342), radius=20,
+            fill="#171c28", outline="#343d50", width=2
+        )
+        draw.text((42, 35), "BLADETIERS", fill="#f2f5ff", font=font)
+        draw.text(
+            (42, 62), "BOT STATUS / LIVE MONITOR",
+            fill="#9ca9c4", font=font
+        )
+        draw.ellipse((42, 100, 56, 114), fill="#43d17d")
+        draw.text((68, 100), "ONLINE", fill="#43d17d", font=font)
+        draw.text(
+            (42, 140), f"LATENCY  {latency} ms",
+            fill="#f2f5ff", font=font
+        )
+        draw.text(
+            (42, 168), f"AVERAGE  {average} ms",
+            fill="#b9c6df", font=font
+        )
+        draw.text(
+            (42, 196), f"UPTIME   {uptime}",
+            fill="#b9c6df", font=font
+        )
+        draw.text(
+            (42, 245), "Recent latency checks",
+            fill="#9ca9c4", font=font
+        )
+
+        x0, y0, x1, y1 = 380, 100, 900, 280
+        draw.line((x0, y1, x1, y1), fill="#465168", width=2)
+        draw.line((x0, 190, x1, 190), fill="#293244", width=1)
+
+        values = self.latencies
+        points = []
+        for i, value in enumerate(values):
+            x = x1 if len(values) == 1 else (
+                x0 + i * (x1 - x0) / (len(values) - 1)
+            )
+            y = y1 - min(value, 300) / 300 * (y1 - y0)
+            points.append((int(x), int(y)))
+
+        if len(points) > 1:
+            draw.line(points, fill="#63a8ff", width=4)
+        for x, y in points:
+            draw.ellipse((x-4, y-4, x+4, y+4), fill="#8dc4ff")
+
+        draw.text((x0, 75), "300 ms", fill="#9ca9c4", font=font)
+        draw.text((x0, 292), "0 ms", fill="#9ca9c4", font=font)
+
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG", optimize=True)
+        buffer.seek(0)
+        return buffer
+
+    async def update(self):
+        latency = max(0, round(self.bot.latency * 1000))
+        samples = (self.latencies + [latency])[-12:]
+        average = round(sum(samples) / len(samples))
+        seconds = max(0, int(time.monotonic() - self.started_mono))
+        days, seconds = divmod(seconds, 86400)
+        hours, seconds = divmod(seconds, 3600)
+        minutes, _ = divmod(seconds, 60)
+        uptime = (
+            f"{days}d {hours}h {minutes}m" if days
+            else f"{hours}h {minutes}m"
+        )
+
+        buffer = self.make_graph(latency, average, uptime)
+        embed = discord.Embed(
+            title="⚔️ BladeTiers | Bot Status",
+            description=(
+                "🟢 **Operational**\n"
+                f"📡 Latency: **{latency} ms** · "
+                f"Average: **{average} ms**\n"
+                f"⏱️ Uptime: **{uptime}**\n"
+                f"🔄 Started: <t:{int(self.started_at.timestamp())}:R>\n"
+                f"🕒 Updated: <t:{int(time.time())}:R>"
+            ),
+            color=0x43D17D,
+        )
+        embed.set_image(url="attachment://bladetiers_status.png")
+        file = discord.File(buffer, filename="bladetiers_status.png")
+
+        channel = self.bot.get_channel(self.channel_id)
+        if channel is None:
+            channel = await self.bot.fetch_channel(self.channel_id)
+
+        return channel, embed, file
+
+
+print("Status module definition loaded.")

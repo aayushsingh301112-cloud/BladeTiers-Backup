@@ -1,0 +1,5897 @@
+import asyncio
+import base64
+import io
+import json
+import os
+import random
+import time
+from pathlib import Path
+from urllib.parse import quote
+from urllib.request import Request, urlopen
+
+import discord
+from discord import app_commands
+from discord.ext import commands, tasks
+from dotenv import load_dotenv
+from PIL import Image
+
+load_dotenv()
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID = os.getenv("GUILD_ID")
+
+if not TOKEN:
+    raise RuntimeError("DISCORD_TOKEN is missing from .env")
+
+if not GUILD_ID:
+    raise RuntimeError("GUILD_ID is missing from .env")
+
+BASE_DIR = Path("/root/tierbot")
+SKINS_DIR = BASE_DIR / "skins"
+SKIN_WEBSITE_DIR = BASE_DIR / "skin_website"
+RESULTS_DIR = BASE_DIR / "results"
+QUEUE_FILE = BASE_DIR / "queue.json"
+PANEL_FILE = BASE_DIR / "reghere_panel.json"
+TIERS_FILE = BASE_DIR / "tiers.json"
+
+SKINS_DIR.mkdir(parents=True, exist_ok=True)
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents
+)
+
+BLACKOUT_OWNER_ID = 1359186600797671507
+BLACKOUT_FILE = BASE_DIR / "blackout.json"
+
+try:
+    BLACKOUT_ENABLED = bool(json.loads(BLACKOUT_FILE.read_text()).get("enabled", False))
+except (OSError, ValueError, AttributeError):
+    BLACKOUT_ENABLED = False
+
+
+async def blackout_interaction_check(interaction: discord.Interaction) -> bool:
+    command = interaction.command
+
+    if BLACKOUT_ENABLED and command and command.name != "blackout":
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                "Server Under Blackout",
+                ephemeral=True
+            )
+        return False
+
+    return True
+
+
+bot.tree.interaction_check = blackout_interaction_check
+
+TIERS = [
+    "Unranked",
+    "LT5",
+    "HT5",
+    "LT4",
+    "HT4",
+    "LT3",
+    "HT3",
+    "LT2",
+    "HT2",
+    "LT1",
+    "HT1",
+    "MT5",
+    "MT4",
+    "MT3",
+    "MT2",
+    "MT1"
+]
+
+REGIONS = [
+    "NA",
+    "EU",
+    "AS",
+    "SA",
+    "OCE",
+    "MEA"
+]
+
+SKINS_CHANNEL_NAME = "skins-thing"
+TESTER_TEAM_ROLE_NAME = "TESTER TEAM"
+TEST_TICKET_CATEGORY_NAME = "Tier Test Tickets"
+
+# Prevent two testers from taking the same #1 simultaneously.
+queue_take_lock = asyncio.Lock()
+
+MCHEADS_SKIN = "https://mc-heads.net/skin/{username}"
+
+ACCOUNT_TYPES = {
+    "premium": "Premium (Official Minecraft)",
+    "cracked": "Cracked"
+}
+
+QUEUE_CONFIG = {
+    "axe": ("axe-waitlist", "axe-waitlist"),
+    "sword": ("sword-waitlist", "sword-waitlist"),
+    "vanilla": ("vanilla-waitlist", "vanilla-waitlist"),
+    "smp": ("smp-waitlist", "smp-waitlist"),
+    "pot": ("pot-waitlist", "pot-waitlist"),
+    "mace": ("mace-waitlist", "mace-waitlist"),
+    "nethop": ("nethop-waitlist", "nethop-waitlist"),
+    "uhc": ("uhc-waitlist", "uhc-waitlist"),
+    "spear": ("spear-waitlist", "spear-waitlist"),
+}
+
+
+def clean_username(username: str) -> str:
+    username = username.strip()
+    return "".join(
+        c for c in username
+        if c.isalnum() or c in ("_", "-")
+    )
+
+
+def has_role(member: discord.Member, role_name: str) -> bool:
+    return discord.utils.get(
+        member.roles,
+        name=role_name
+    ) is not None
+
+
+def can_give_result(member: discord.Member) -> bool:
+    if member.guild_permissions.administrator:
+        return True
+
+    return has_role(member, "TESTER TEAM")
+
+
+# =========================================================
+# Shayari command
+# =========================================================
+
+SHAYARI_COOLDOWN_SECONDS = 30 * 60
+SHAYARI_COOLDOWNS = {}
+
+SHAYARIS = [
+    """Khud ko teri yaadon ka gulaam kar diya,
+Tere khatir khudko badnaam kar diya,
+Aur kya saboot doon apni mohabbat ka,
+Mere paas ek hi dil tha,
+Woh bhi tere naam kar diya. ❤️🥀""",
+
+    """Kabhi kisi ko itna bhi kareeb mat lana,
+Ki uske bina har pal adhoora lagne lage,
+Mohabbat mein sab kuch luta dena magar,
+Itna nahi...
+Ki khud se hi door hone lage. 🥀""",
+
+    """Teri yaadon ko sambhal kar rakha hai,
+Jaise koi apna khazana rakhta hai,
+Tu mile ya na mile meri zindagi mein,
+Dil ne tujhe phir bhi apna bana rakha hai. ❤️""",
+
+    """Kuch rishte lafzon se nahi samjhe jaate,
+Kuch ehsaas aankhon se bayan ho jaate,
+Tum paas raho ya door,
+Mohabbat ke fasle dil se kabhi nahi hote. 🌙🥀""",
+
+    """Uski ek muskurahat pe hum haar gaye,
+Apna har gham uske naam kar gaye,
+Socha tha sambhal lenge khud ko,
+Par uski aankhon mein dekha aur bikhar gaye. ❤️‍🩹""",
+
+    """Waqt badla, log badle,
+Par meri mohabbat nahi badli,
+Tu aaj bhi utni hi khaas hai,
+Bas kismat ne meri taraf se raah badal di. 🥀""",
+
+    """Dil ko aadat si ho gayi hai tera intezaar karne ki,
+Har khamoshi mein tera naam sunne ki,
+Pata nahi tu naseeb mein hai ya nahi,
+Par dua roz hoti hai tujhe apna banane ki. ❤️""",
+
+    """Tujhse baat ho toh din khoobsurat lagta hai,
+Teri khamoshi mein bhi kuch khaas lagta hai,
+Log poochte hain kya hai tu mere liye,
+Bas itna keh deta hoon—
+Tu hai, isliye sab kuch khaas lagta hai. 🌙""",
+
+    """Mohabbat mein hisaab nahi rakha karte,
+Jo dil mein ho use chhupaya nahi karte,
+Agar kisi ko sach mein chahte ho,
+Toh use khone ke darr se mohabbat kam nahi karte. ❤️‍🩹🥀""",
+
+    """Kabhi meri kami mehsoos ho toh laut aana,
+Apni aankhon mein mera naam phir se basaana,
+Main shikayat nahi karunga guzre waqt ki,
+Bas ek baar phir se apna keh jaana. 🥀❤️"""
+]
+
+
+@bot.tree.command(
+    name="shayari",
+    description="Get a random shayari.",
+    guild=discord.Object(id=int(os.getenv("GUILD_ID")))
+)
+async def shayari(interaction: discord.Interaction):
+    user_id = interaction.user.id
+    now = time.monotonic()
+
+    last_used = SHAYARI_COOLDOWNS.get(user_id)
+
+    if last_used is not None:
+        remaining = SHAYARI_COOLDOWN_SECONDS - (now - last_used)
+
+        if remaining > 0:
+            minutes = int(remaining // 60)
+            seconds = int(remaining % 60)
+
+            await interaction.response.send_message(
+                f"⏳ **You can use `/shayari` again in "
+                f"{minutes}m {seconds}s.**",
+                ephemeral=True
+            )
+            return
+
+    selected_shayari = random.choice(SHAYARIS)
+    SHAYARI_COOLDOWNS[user_id] = now
+
+    embed = discord.Embed(
+        description=selected_shayari,
+        color=discord.Color.from_rgb(57, 255, 20)
+    )
+
+    embed.set_footer(
+        text="BladeTiers • Shayari"
+    )
+
+    await interaction.response.send_message(
+        embed=embed
+    )
+
+
+def create_face(skin_data) -> Image.Image:
+    if isinstance(skin_data, Image.Image):
+        skin = skin_data
+    else:
+        skin = Image.open(
+            io.BytesIO(skin_data)
+        ).convert("RGBA")
+
+    width, height = skin.size
+
+    if width != height:
+        raise ValueError("Skin must be square.")
+
+    if width not in (64, 128):
+        raise ValueError(
+            "Skin must be 64x64 or 128x128."
+        )
+
+    scale = width // 64
+
+    base_face = skin.crop(
+        (
+            8 * scale,
+            8 * scale,
+            16 * scale,
+            16 * scale
+        )
+    )
+
+    overlay_face = skin.crop(
+        (
+            40 * scale,
+            8 * scale,
+            48 * scale,
+            16 * scale
+        )
+    )
+
+    face = Image.alpha_composite(
+        base_face,
+        overlay_face
+    )
+
+    face = face.resize(
+        (256, 256),
+        Image.Resampling.NEAREST
+    )
+
+    return face
+
+
+def load_queue():
+    if not QUEUE_FILE.exists():
+        return {}
+
+    try:
+        with open(
+            QUEUE_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_queue(queue):
+    with open(
+        QUEUE_FILE,
+        "w",
+        encoding="utf-8"
+    ) as f:
+        json.dump(queue, f, indent=2)
+
+
+def get_queue(gamemode):
+    queue = load_queue()
+    if gamemode not in queue:
+        queue[gamemode] = []
+        save_queue(queue)
+    return queue[gamemode]
+
+
+def set_active_tester(gamemode, user_id):
+    queue = load_queue()
+    queue.setdefault(gamemode, [])
+    queue[gamemode + "_active_tester"] = str(user_id)
+    save_queue(queue)
+
+
+def get_active_tester(gamemode):
+    queue = load_queue()
+    return queue.get(gamemode + "_active_tester")
+
+
+async def remove_player_from_queue(guild, user_id, gamemode=None):
+    queue = load_queue()
+
+    # If gamemode is valid, check that queue first.
+    # Otherwise search every queue.
+    if gamemode in QUEUE_CONFIG:
+        modes = [gamemode]
+    else:
+        modes = list(QUEUE_CONFIG.keys())
+
+    removed_mode = None
+    next_player = None
+
+    for mode in modes:
+        entries = queue.get(mode, [])
+
+        if not isinstance(entries, list):
+            continue
+
+        old_queue = list(entries)
+
+        new_queue = [
+            entry
+            for entry in old_queue
+            if str(entry.get("user_id")) != str(user_id)
+        ]
+
+        if len(new_queue) != len(old_queue):
+            queue[mode] = new_queue
+            removed_mode = mode
+
+            if new_queue:
+                next_player = new_queue[0]
+
+            break
+
+    # Nothing found.
+    if removed_mode is None:
+        return None
+
+    save_queue(queue)
+
+    # Remove the player's waitlist role.
+    try:
+        role_name, channel_name = QUEUE_CONFIG[removed_mode]
+
+        member = guild.get_member(int(user_id))
+
+        if member is None:
+            member = await guild.fetch_member(int(user_id))
+
+        role = discord.utils.get(
+            guild.roles,
+            name=role_name
+        )
+
+        if role and role in member.roles:
+            await member.remove_roles(
+                role,
+                reason=f"Completed {removed_mode.title()} tier test"
+            )
+
+    except (
+        discord.NotFound,
+        discord.Forbidden,
+        discord.HTTPException,
+        ValueError,
+        TypeError
+    ):
+        pass
+
+    # DM the new #1 only.
+    if next_player:
+        try:
+            next_user = guild.get_member(
+                int(next_player["user_id"])
+            )
+
+            if next_user is None:
+                next_user = await guild.fetch_member(
+                    int(next_player["user_id"])
+                )
+
+            await next_user.send(
+                f"🧪 You're **#1** in the "
+                f"**{removed_mode.title()} tier-test queue!**"
+            )
+
+        except (
+            discord.NotFound,
+            discord.Forbidden,
+            discord.HTTPException,
+            ValueError,
+            TypeError
+        ):
+            pass
+
+    # Update the actual Discord queue panel.
+    try:
+        _, channel_name = QUEUE_CONFIG[removed_mode]
+
+        channel = discord.utils.get(
+            guild.text_channels,
+            name=channel_name
+        )
+
+        if channel is not None:
+            queue_data = load_queue()
+            panel_message_id = queue_data.get(
+                f"{removed_mode}_panel_message_id"
+            )
+
+            if panel_message_id:
+                try:
+                    message = await channel.fetch_message(
+                        int(panel_message_id)
+                    )
+
+                    await message.edit(
+                        embed=await build_queue_embed(
+                            guild,
+                            removed_mode
+                        ),
+                        view=QueuePanelView(removed_mode)
+                    )
+
+                except (
+                    discord.NotFound,
+                    discord.Forbidden,
+                    discord.HTTPException,
+                    ValueError,
+                    TypeError
+                ):
+                    pass
+
+    except (
+        discord.NotFound,
+        discord.Forbidden,
+        discord.HTTPException
+    ):
+        pass
+
+    return removed_mode
+
+
+async def find_user_queue(user_id):
+    queue = load_queue()
+
+    for mode, entries in queue.items():
+        if not isinstance(entries, list):
+            continue
+
+        for entry in entries:
+            if str(entry.get("user_id")) == str(user_id):
+                return mode
+
+    return None
+
+
+_registration_cache = {}
+_registration_cache_mtime = None
+
+def get_registration(user_id):
+    global _registration_cache, _registration_cache_mtime
+
+    registration_file = BASE_DIR / "registrations.txt"
+
+    if not registration_file.exists():
+        _registration_cache = {}
+        _registration_cache_mtime = None
+        return None
+
+    try:
+        mtime = registration_file.stat().st_mtime_ns
+    except OSError:
+        return None
+
+    if mtime != _registration_cache_mtime:
+        registrations = {}
+
+        try:
+            with open(
+                registration_file,
+                "r",
+                encoding="utf-8"
+            ) as f:
+                for line in f:
+                    parts = line.rstrip("\n").split("|")
+
+                    if len(parts) >= 4:
+                        registrations[parts[0]] = parts
+                    elif len(parts) >= 3:
+                        registrations[parts[0]] = [
+                            parts[0],
+                            parts[1],
+                            parts[2],
+                            "cracked"
+                        ]
+        except OSError:
+            return None
+
+        _registration_cache = registrations
+        _registration_cache_mtime = mtime
+
+    return _registration_cache.get(str(user_id))
+
+
+
+async def build_queue_embed(guild, gamemode):
+    queue_data = load_queue()
+    queue = queue_data.get(gamemode, [])
+    server = queue_data.get(
+        f"{gamemode}_server",
+        "Not specified"
+    )
+
+    mode_name = gamemode.title()
+
+    if queue:
+        queue_lines = []
+        member_cache = {}
+
+        for index, entry in enumerate(queue, start=1):
+            user_id = str(entry.get("user_id"))
+            username = entry.get("username", "Unknown")
+
+            try:
+                member = member_cache.get(user_id)
+
+                if member is None:
+                    member = guild.get_member(int(user_id))
+
+                    if member is None:
+                        member = await guild.fetch_member(
+                            int(user_id)
+                        )
+
+                    member_cache[user_id] = member
+
+                mention = member.mention
+
+            except (
+                ValueError,
+                TypeError,
+                discord.NotFound,
+                discord.HTTPException
+            ):
+                mention = f"<@{user_id}>"
+
+            queue_lines.append(
+                f"`#{index}` {mention} (`{username}`)"
+            )
+
+        queue_text = "\n".join(queue_lines)
+
+    else:
+        queue_text = "*No one in queue yet*"
+
+    # -----------------------------------------------------
+    # Currently testing
+    # -----------------------------------------------------
+
+    currently_testing = queue_data.get(
+        f"{gamemode}_currently_testing",
+        []
+    )
+
+    if isinstance(currently_testing, str):
+        currently_testing = [currently_testing]
+
+    if currently_testing:
+        testing_text = (
+            "🧪 **Currently Testing:**\n"
+            + "\n".join(
+                f"`{username}`"
+                for username in currently_testing
+            )
+        )
+    else:
+        testing_text = (
+            "🧪 **Currently Testing:** "
+            "*Nobody*"
+        )
+
+    # -----------------------------------------------------
+    # Active tester
+    # -----------------------------------------------------
+
+    active_tester_id = get_active_tester(gamemode)
+    active_tester = None
+
+    if active_tester_id:
+        try:
+            active_tester = guild.get_member(
+                int(active_tester_id)
+            )
+
+            if active_tester is None:
+                active_tester = await guild.fetch_member(
+                    int(active_tester_id)
+                )
+
+        except (
+            ValueError,
+            TypeError,
+            discord.NotFound,
+            discord.HTTPException
+        ):
+            active_tester = None
+
+    if active_tester is not None:
+        tester_text = active_tester.mention
+    else:
+        tester_text = "*No active tester*"
+
+    emoji_names = {
+        "axe": "axe",
+        "sword": "sword~2",
+        "vanilla": "vanilla",
+        "smp": "smp",
+        "pot": "pot",
+        "mace": "mace",
+        "nethop": "nethop",
+        "uhc": "uhc",
+        "spear": "spear"
+    }
+
+    queue_emoji = discord.utils.get(
+        guild.emojis,
+        name=emoji_names.get(mode_name.lower())
+    )
+
+    queue_prefix = (
+        f"{queue_emoji} "
+        if queue_emoji
+        else ""
+    )
+
+    embed = discord.Embed(
+        title=(
+            f"{queue_prefix}"
+            f"{mode_name} Queue Is Now Open"
+        ),
+        description=(
+            f"**{mode_name} Queue is Online**\n\n"
+            f"{testing_text}\n\n"
+            "👤 **Available Tester**\n"
+            f"{tester_text}\n\n"
+            "📋 **Queue**\n"
+            f"👥 **{len(queue)}/30 players**\n\n"
+            f"{queue_text}\n\n"
+            "🌐 **Server**\n"
+            f"`{server}`"
+        ),
+        color=discord.Color.green()
+    )
+
+    embed.set_footer(
+        text=f"{len(queue)}/30 players in queue"
+    )
+
+    return embed
+
+
+
+
+
+
+def record_tester_result(tester_id, tester_username, gamemode=None):
+    """Record one successfully completed tier test."""
+    stats_file = BASE_DIR / "tester_stats.json"
+
+    try:
+        if stats_file.exists():
+            with open(stats_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = {}
+
+        if not isinstance(data, dict):
+            data = {}
+
+        testers = data.setdefault("testers", {})
+        tester_id = str(tester_id)
+
+        entry = testers.setdefault(
+            tester_id,
+            {
+                "username": str(tester_username),
+                "tests": 0,
+                "gamemodes": {}
+            }
+        )
+
+        entry["username"] = str(tester_username)
+        entry["tests"] = int(entry.get("tests", 0)) + 1
+
+        if gamemode:
+            mode = str(gamemode).lower()
+            gamemodes = entry.setdefault("gamemodes", {})
+            gamemodes[mode] = int(gamemodes.get(mode, 0)) + 1
+
+        with open(stats_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+        print(
+            f"🧪 Tester stats: {tester_username} "
+            f"completed test #{entry['tests']} "
+            f"({gamemode or 'unknown'})"
+        )
+
+    except Exception as e:
+        print(f"❌ Failed to record tester result: {e}")
+
+
+@bot.tree.command(
+    name="testerstats",
+    description="View a tester's statistics.",
+    guild=discord.Object(id=int(os.getenv("GUILD_ID")))
+)
+@app_commands.describe(user="The tester you want to view.")
+async def testerstats(
+    interaction: discord.Interaction,
+    user: discord.Member
+):
+    role = discord.utils.get(
+        interaction.guild.roles,
+        name="Voluntary Testers"
+    )
+
+    if not role or role not in user.roles:
+        await interaction.response.send_message(
+            f"❌ {user.mention} is not a tester.",
+            ephemeral=True
+        )
+        return
+
+    stats_file = BASE_DIR / "tester_stats.json"
+
+    try:
+        data = (
+            json.loads(
+                stats_file.read_text(encoding="utf-8")
+            )
+            if stats_file.exists()
+            else {}
+        )
+
+        stats = data.get(
+            "testers",
+            {}
+        ).get(
+            str(user.id),
+            {}
+        )
+
+        tests = int(stats.get("tests", 0))
+        gamemodes = stats.get("gamemodes", {})
+
+        emoji_names = {
+            "axe": ["axe~1", "axe"],
+            "sword": ["sword~2", "sword"],
+            "vanilla": ["vanilla"],
+            "smp": ["smp"],
+            "pot": ["pot"],
+            "mace": ["mace"],
+            "nethop": ["nethop"],
+            "uhc": ["uhc"]
+        }
+
+        modes = [
+            "axe",
+            "sword",
+            "vanilla",
+            "smp",
+            "pot",
+            "mace",
+            "nethop",
+            "uhc"
+        ]
+
+        def get_emoji(names):
+            for name in names:
+                emoji = discord.utils.get(
+                    interaction.guild.emojis,
+                    name=name
+                )
+                if emoji:
+                    return str(emoji)
+            return ""
+
+        ht1_emoji = get_emoji(["ht1"])
+        tester_emoji = get_emoji(["voluntary_tester"])
+
+        title = (
+            f"{ht1_emoji} Tester Stats"
+            if ht1_emoji
+            else "Tester Stats"
+        )
+
+        tester_line = (
+            f"{tester_emoji} {user.mention}"
+            if tester_emoji
+            else user.mention
+        )
+
+        mode_lines = []
+
+        for mode in modes:
+            emoji = get_emoji(emoji_names[mode])
+            count = int(gamemodes.get(mode, 0))
+
+            mode_lines.append(
+                f"{emoji} **{mode.title()}** — `{count}`"
+                if emoji
+                else f"**{mode.title()}** — `{count}`"
+            )
+
+        avatar_url = user.display_avatar.url
+
+        embed = discord.Embed(
+            title=title,
+            description=(
+                f"{tester_line}\n\n"
+                f"**Tests Completed:** `{tests}`\n\n"
+                f"**Tested In**\n"
+                + "\n".join(mode_lines)
+            ),
+            color=discord.Color.green()
+        )
+
+        embed.set_thumbnail(url=avatar_url)
+
+        await interaction.response.send_message(
+            embed=embed
+        )
+
+    except Exception as e:
+        print(
+            f"❌ Failed to load tester statistics: {e}"
+        )
+
+        await interaction.response.send_message(
+            "❌ Failed to load tester statistics.",
+            ephemeral=True
+        )
+
+
+class TierResultView(discord.ui.View):
+    def __init__(
+        self,
+        gamemode,
+        tester_id,
+        player_entry
+    ):
+        super().__init__(timeout=None)
+
+        self.gamemode = gamemode
+        self.tester_id = int(tester_id)
+        self.player_entry = dict(player_entry)
+
+        # Testers can award up to LT3 only.
+        # Higher tiers remain valid elsewhere in the bot.
+        tiers = [
+            "LT5",
+            "HT5",
+            "LT4",
+            "HT4",
+            "LT3"
+        ]
+
+        for tier in tiers:
+            button = discord.ui.Button(
+                label=f"{gamemode.title()} {tier}",
+                style=discord.ButtonStyle.success,
+                custom_id=f"tier_result:{gamemode}:{tier}"
+            )
+
+            async def callback(
+                interaction,
+                selected_tier=tier
+            ):
+                await self.handle_result(
+                    interaction,
+                    selected_tier
+                )
+
+            button.callback = callback
+            self.add_item(button)
+
+    @discord.ui.button(
+        label="No Result",
+        style=discord.ButtonStyle.danger,
+        emoji="❌",
+        row=2,
+        custom_id="tierbot_no_result"
+    )
+    async def no_result_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ This can only be used inside a server.",
+                ephemeral=True
+            )
+            return
+
+        if interaction.user.id != self.tester_id:
+            await interaction.response.send_message(
+                "❌ **Only the assigned tester can use No Result.**",
+                ephemeral=True
+            )
+            return
+
+        queue = load_queue()
+        current_key = f"{self.gamemode}_currently_testing"
+
+        currently_testing = queue.get(
+            current_key,
+            []
+        )
+
+        if isinstance(currently_testing, str):
+            currently_testing = [currently_testing]
+
+        username = self.player_entry.get(
+            "username",
+            "Unknown"
+        )
+
+        if not currently_testing:
+            await interaction.response.send_message(
+                "❌ **This test is no longer active.**",
+                ephemeral=True
+            )
+            return
+
+        if not any(
+            clean_username(str(name))
+            == clean_username(str(username))
+            for name in currently_testing
+        ):
+            await interaction.response.send_message(
+                "❌ **This ticket is no longer active.**",
+                ephemeral=True
+            )
+            return
+
+        # Remove ONLY this player's active test.
+        currently_testing = [
+            name
+            for name in currently_testing
+            if clean_username(str(name))
+            != clean_username(str(username))
+        ]
+
+        if currently_testing:
+            queue[current_key] = currently_testing
+        else:
+            queue.pop(current_key, None)
+
+        save_queue(queue)
+
+        await interaction.response.defer()
+
+        await asyncio.sleep(3)
+
+        try:
+            await interaction.channel.delete(
+                reason="Tier test cancelled - No Result"
+            )
+        except (
+            discord.NotFound,
+            discord.Forbidden,
+            discord.HTTPException
+        ):
+            pass
+
+    async def handle_result(
+        self,
+        interaction: discord.Interaction,
+        new_tier: str
+    ):
+        # ACKNOWLEDGE IMMEDIATELY.
+        # This prevents "BladeTiers didn't respond in time."
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+
+        try:
+            if interaction.guild is None:
+                await interaction.followup.send(
+                    "❌ This can only be used inside a server.",
+                    ephemeral=True
+                )
+                return
+
+            # Only the assigned tester can give the result.
+            if interaction.user.id != self.tester_id:
+                await interaction.followup.send(
+                    "❌ **Only the assigned tester can give this result.**",
+                    ephemeral=True
+                )
+                return
+
+            queue = load_queue()
+
+            testing_key = (
+                f"{self.gamemode}_currently_testing"
+            )
+
+            currently_testing = queue.get(
+                testing_key,
+                []
+            )
+
+            if isinstance(currently_testing, str):
+                currently_testing = [currently_testing]
+
+            username = self.player_entry.get(
+                "username",
+                "Unknown"
+            )
+
+            if not currently_testing:
+                await interaction.followup.send(
+                    "❌ **This tier test is no longer active.**",
+                    ephemeral=True
+                )
+                return
+
+            if not any(
+                clean_username(str(name))
+                == clean_username(str(username))
+                for name in currently_testing
+            ):
+                await interaction.followup.send(
+                    "❌ **This ticket is no longer active.**",
+                    ephemeral=True
+                )
+                return
+
+            # Find result channel.
+            result_channel = discord.utils.get(
+                interaction.guild.text_channels,
+                name="🏆┃result"
+            )
+
+            if result_channel is None:
+                result_channel = discord.utils.get(
+                    interaction.guild.text_channels,
+                    name="result"
+                )
+
+            if result_channel is None:
+                await interaction.followup.send(
+                    "❌ **`🏆┃result` channel was not found.**",
+                    ephemeral=True
+                )
+                return
+
+            region = self.player_entry.get(
+                "region",
+                "Unknown"
+            )
+
+            player_id = str(
+                self.player_entry.get(
+                    "user_id"
+                )
+            )
+
+            previous_tier = get_player_tier(
+                username,
+                self.gamemode
+            )
+
+            new_tier = str(
+                new_tier
+            ).upper()
+
+            registration = get_registration(int(player_id))
+            account_type = str(registration[3]).lower() if registration and len(registration) >= 4 else "cracked"
+            skin_path = SKINS_DIR / f"{clean_username(username)}.png"
+            image_found = skin_path.is_file()
+            # Result embed.
+            if "5" in new_tier:
+                embed_color = discord.Color.from_rgb(
+                    140, 255, 0
+                )
+            elif "4" in new_tier:
+                embed_color = discord.Color.from_rgb(
+                    255, 230, 0
+                )
+            elif "3" in new_tier:
+                embed_color = discord.Color.from_rgb(
+                    255, 255, 255
+                )
+            elif "2" in new_tier:
+                embed_color = discord.Color.from_rgb(
+                    255, 180, 0
+                )
+            elif "1" in new_tier:
+                embed_color = discord.Color.from_rgb(
+                    70, 140, 255
+                )
+            else:
+                embed_color = discord.Color.blurple()
+
+            embed = discord.Embed(
+                title=(
+                    f"🏆 Tier Test Result — "
+                    f"{username}"
+                ),
+                color=embed_color
+            )
+
+            if account_type == "premium":
+                embed.set_thumbnail(
+                    url=f"https://mc-heads.net/avatar/{clean_username(username)}/256"
+                )
+                embed.add_field(
+                    name="Player Face",
+                    value="✅ Premium skin loaded from MCHeads",
+                    inline=False
+                )
+
+            embed.add_field(
+                name="Tester",
+                value=interaction.user.display_name,
+                inline=False
+            )
+
+            embed.add_field(
+                name="Region",
+                value=region,
+                inline=False
+            )
+
+            embed.add_field(
+                name="Username",
+                value=username,
+                inline=False
+            )
+
+            embed.add_field(
+                name="Gamemode",
+                value=self.gamemode,
+                inline=False
+            )
+
+            embed.add_field(
+                name="Previous Tier",
+                value=previous_tier,
+                inline=False
+            )
+
+            embed.add_field(
+                name="New Tier",
+                value=new_tier,
+                inline=False
+            )
+
+            result_file = None
+
+            if image_found:
+                embed.add_field(
+                    name="Player Face",
+                    value="✅ User image found",
+                    inline=False
+                )
+
+                embed.set_thumbnail(
+                    url="attachment://player-face.png"
+                )
+
+                with open(
+                    skin_path,
+                    "rb"
+                ) as face_file:
+                    face_image = create_face(
+                        face_file.read()
+                    )
+
+                face_buffer = io.BytesIO()
+
+                face_image.save(
+                    face_buffer,
+                    format="PNG"
+                )
+
+                face_buffer.seek(0)
+
+                result_file = discord.File(
+                    face_buffer,
+                    filename="player-face.png"
+                )
+
+            else:
+                embed.add_field(
+                    name="Player Face",
+                    value="❌ Error - user image not found",
+                    inline=False
+                )
+
+            # Get player for mention.
+            player = None
+
+            try:
+                player = interaction.guild.get_member(
+                    int(player_id)
+                )
+
+                if player is None:
+                    player = await interaction.guild.fetch_member(
+                        int(player_id)
+                    )
+
+            except (
+                discord.NotFound,
+                discord.HTTPException,
+                ValueError,
+                TypeError
+            ):
+                pass
+
+            if player is not None:
+                result_content = player.mention
+            else:
+                result_content = f"<@{player_id}>"
+
+            # POST RESULT FIRST.
+            if result_file is not None:
+                result_message = await result_channel.send(
+                    content=result_content,
+                    embed=embed,
+                    file=result_file,
+                    allowed_mentions=discord.AllowedMentions(
+                        users=True
+                    )
+                )
+            else:
+                result_message = await result_channel.send(
+                    content=result_content,
+                    embed=embed,
+                    allowed_mentions=discord.AllowedMentions(
+                        users=True
+                    )
+                )
+
+            # Exact requested reactions.
+            for emoji in (
+                "🏆",
+                "🎉",
+                "🔥",
+                "👍",
+                "💀"
+            ):
+                try:
+                    await result_message.add_reaction(
+                        emoji
+                    )
+                except (
+                    discord.Forbidden,
+                    discord.HTTPException
+                ):
+                    pass
+
+            # Record tester stats only after the result was successfully posted.
+            record_tester_result(
+                self.tester_id,
+                interaction.user.display_name,
+                self.gamemode
+            )
+
+            # Save tier ONLY after result successfully posted.
+            save_player_tier(
+                username,
+                self.gamemode,
+                new_tier
+            )
+
+            # Start a 24-hour cooldown ONLY for the
+            # gamemode that was successfully tested.
+            set_test_cooldown(
+                self.player_entry.get(
+                    "user_id",
+                    interaction.user.id
+                ),
+                self.gamemode
+            )
+
+            # Finish ONLY this player's test.
+            currently_testing = queue.get(
+                testing_key,
+                []
+            )
+
+            if isinstance(currently_testing, str):
+                currently_testing = [currently_testing]
+
+            currently_testing = [
+                name
+                for name in currently_testing
+                if clean_username(str(name))
+                != clean_username(str(username))
+            ]
+
+            if currently_testing:
+                queue[testing_key] = currently_testing
+            else:
+                queue.pop(testing_key, None)
+
+            save_queue(queue)
+
+            # Promote next #1.
+            # Reuse the queue already loaded above.
+            entries = queue.get(
+                self.gamemode,
+                []
+            )
+
+            next_player = None
+
+            if isinstance(entries, list) and entries:
+                next_player = entries[0]
+
+            if next_player:
+                try:
+                    next_member = (
+                        interaction.guild.get_member(
+                            int(next_player["user_id"])
+                        )
+                    )
+
+                    if next_member is None:
+                        next_member = (
+                            await interaction.guild.fetch_member(
+                                int(next_player["user_id"])
+                            )
+                        )
+
+                    await next_member.send(
+                        f"🎯 **You're now #1 in the "
+                        f"{self.gamemode.title()} tier-test queue!**"
+                    )
+
+                except (
+                    discord.NotFound,
+                    discord.Forbidden,
+                    discord.HTTPException,
+                    ValueError,
+                    TypeError
+                ):
+                    pass
+
+            # Refresh the queue panel directly.
+            try:
+                _, queue_channel_name = QUEUE_CONFIG[
+                    self.gamemode
+                ]
+
+                queue_channel = discord.utils.get(
+                    interaction.guild.text_channels,
+                    name=queue_channel_name
+                )
+
+                queue_data = load_queue()
+                panel_message_id = queue_data.get(
+                    f"{self.gamemode}_panel_message_id"
+                )
+
+                if queue_channel is not None and panel_message_id:
+                    try:
+                        panel_message = await queue_channel.fetch_message(
+                            int(panel_message_id)
+                        )
+
+                        await panel_message.edit(
+                            embed=await build_queue_embed(
+                                interaction.guild,
+                                self.gamemode
+                            ),
+                            view=QueuePanelView(
+                                self.gamemode
+                            )
+                        )
+
+                    except (
+                        discord.NotFound,
+                        discord.Forbidden,
+                        discord.HTTPException,
+                        ValueError,
+                        TypeError
+                    ):
+                        pass
+
+            except Exception as error:
+                print(
+                    f"⚠️ Queue panel refresh failed: "
+                    f"{error}"
+                )
+
+            # Tell tester the result worked.
+            await interaction.followup.send(
+                "✅ **Result submitted!**\n"
+                "🏆 Result posted successfully.\n"
+                "🗑️ **Ticket deleting in 3 seconds...**",
+                ephemeral=False
+            )
+
+            await asyncio.sleep(3)
+
+            try:
+                await interaction.channel.delete(
+                    reason="Tier test completed"
+                )
+            except (
+                discord.NotFound,
+                discord.Forbidden,
+                discord.HTTPException
+            ):
+                pass
+
+        except Exception as error:
+            print(
+                "❌ Tier result button error:"
+            )
+            print(
+                repr(error)
+            )
+
+            try:
+                await interaction.followup.send(
+                    "❌ **Something went wrong while submitting "
+                    "the result.**\n"
+                    "Check the bot console for the exact error.",
+                    ephemeral=True
+                )
+            except Exception:
+                pass
+
+async def send_skin_to_private_channel(
+    username,
+    region,
+    account_type,
+    skin_bytes=None
+):
+    """Send registration/skin information to #skins-thing."""
+    try:
+        channel = discord.utils.get(
+            bot.get_all_channels(),
+            name=SKINS_CHANNEL_NAME
+        )
+
+        if channel is None:
+            print(f"⚠️ #{SKINS_CHANNEL_NAME} channel not found.")
+            return False
+
+        import io
+
+        account = str(account_type).lower()
+        account = "premium" if "premium" in account else "cracked"
+
+        content = (
+            f"Name: {username}\n"
+            f"Account Type: {account}"
+        )
+
+        if skin_bytes is not None:
+            file = discord.File(
+                io.BytesIO(skin_bytes),
+                filename=f"{clean_username(username)}.png"
+            )
+
+            await channel.send(
+                content=content + "\nSkin: ⬇️",
+                file=file
+            )
+        else:
+            await channel.send(content=content)
+
+        print(
+            f"✅ Sent to #{SKINS_CHANNEL_NAME} | "
+            f"{username} | {account}"
+        )
+        return True
+
+    except Exception as error:
+        print(
+            f"❌ Failed to send to #{SKINS_CHANNEL_NAME}: {error}"
+        )
+        return False
+
+
+class RegisterModal(discord.ui.Modal):
+    def __init__(self, account_type):
+        self.account_type = account_type
+
+        super().__init__(
+            title="BladeTiers Profile Registration — Step 2/2"
+        )
+
+        self.username = discord.ui.TextInput(
+            label="In-Game Username",
+            placeholder="Example: MC_Vidz",
+            required=True,
+            max_length=16
+        )
+
+        self.region = discord.ui.TextInput(
+            label="Region",
+            placeholder="AS / EU / NA / SA / OCE / MEA",
+            required=True,
+            max_length=3
+        )
+
+        self.add_item(self.username)
+        self.add_item(self.region)
+
+    async def on_submit(
+        self,
+        interaction: discord.Interaction
+    ):
+        username = str(self.username.value).strip()
+        region = str(self.region.value).strip().upper()
+
+        if self.account_type not in ACCOUNT_TYPES:
+            await interaction.response.send_message(
+                "❌ Invalid Minecraft account type.",
+                ephemeral=True
+            )
+            return
+
+        allowed_regions = {
+            "AS",
+            "EU",
+            "NA",
+            "SA",
+            "OCE",
+            "MEA"
+        }
+
+        if region not in allowed_regions:
+            await interaction.response.send_message(
+                "❌ Invalid region.\n\n"
+                "Use one of: `AS`, `EU`, `NA`, `SA`, `OCE`, `MEA`.",
+                ephemeral=True
+            )
+            return
+
+        safe_username = clean_username(username)
+
+        if not safe_username or safe_username != username:
+            await interaction.response.send_message(
+                "❌ Invalid Minecraft username.\n\n"
+                "Use only letters, numbers, `_` or `-`.",
+                ephemeral=True
+            )
+            return
+
+        registration_file = BASE_DIR / "registrations.txt"
+
+        existing = []
+
+        if registration_file.exists():
+            with open(
+                registration_file,
+                "r",
+                encoding="utf-8"
+            ) as f:
+                for line in f:
+                    line = line.rstrip("\n")
+
+                    if not line:
+                        continue
+
+                    parts = line.split("|")
+
+                    if (
+                        len(parts) >= 3
+                        and parts[0] != str(interaction.user.id)
+                    ):
+                        existing.append(line)
+
+        with open(
+            registration_file,
+            "w",
+            encoding="utf-8"
+        ) as f:
+            for line in existing:
+                f.write(line + "\n")
+
+            f.write(
+                f"{interaction.user.id}|"
+                f"{username}|"
+                f"{region}|"
+                f"{self.account_type}\n"
+            )
+
+        account_name = ACCOUNT_TYPES[self.account_type]
+
+        if self.account_type == "premium":
+            extra = (
+                "🟦 **Premium profile:** Your registration details "
+                "have been sent to the private testing channel."
+            )
+            registration_view = None
+        else:
+            extra = (
+                "🖼️ **Cracked profile:** your Minecraft skin is required "
+                "before you can request a tier test.\n\n"
+                "Upload your skin directly using the button below."
+            )
+            registration_view = SkinUploadView()
+
+        await interaction.response.send_message(
+            "✅ **BladeTiers Registration Complete!**\n\n"
+            f"**Account Type:** `{account_name}`\n"
+            f"**In-Game Username:** `{username}`\n"
+            f"**Region:** `{region}`\n\n"
+            f"{extra}",
+            view=registration_view,
+            ephemeral=True
+        )
+
+        if self.account_type == "premium":
+            await send_skin_to_private_channel(
+                username,
+                region,
+                account_name,
+                None
+            )
+
+
+class AccountTypeSelect(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(
+                label="Premium (Official Minecraft)",
+                value="premium",
+                description="Use your Minecraft account skin for the tier test.",
+                emoji="🟦"
+            ),
+            discord.SelectOption(
+                label="Cracked",
+                value="cracked",
+                description="Upload your own Minecraft skin PNG.",
+                emoji="🟩"
+            )
+        ]
+
+        super().__init__(
+            placeholder="Select your Minecraft account type...",
+            min_values=1,
+            max_values=1,
+            options=options,
+            custom_id="bladetiers_account_type"
+        )
+
+    async def callback(
+        self,
+        interaction: discord.Interaction
+    ):
+        await interaction.response.send_modal(
+            RegisterModal(self.values[0])
+        )
+
+
+class AccountTypeView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=300)
+        self.add_item(AccountTypeSelect())
+
+
+
+class TestRequestSelect(discord.ui.Select):
+    def __init__(self, guild=None):
+        emoji_names = {
+            "axe": ["axe"],
+            "sword": ["sword~2", "sword"],
+            "vanilla": ["vanilla"],
+            "smp": ["smp"],
+            "pot": ["pot"],
+            "mace": ["mace"],
+            "nethop": ["nethop"],
+            "uhc": ["uhc"],
+        }
+
+        def get_emoji(mode):
+            if guild is None:
+                return None
+            for name in emoji_names.get(mode, []):
+                emoji = discord.utils.get(guild.emojis, name=name)
+                if emoji:
+                    return str(emoji)
+            return None
+
+        options = [
+            discord.SelectOption(label="Axe", value="axe", emoji=get_emoji("axe")),
+            discord.SelectOption(label="Sword", value="sword", emoji=get_emoji("sword")),
+            discord.SelectOption(label="Vanilla", value="vanilla", emoji=get_emoji("vanilla")),
+            discord.SelectOption(label="SMP", value="smp", emoji=get_emoji("smp")),
+            discord.SelectOption(label="Pot", value="pot", emoji=get_emoji("pot")),
+            discord.SelectOption(label="Mace", value="mace", emoji=get_emoji("mace")),
+            discord.SelectOption(label="Nethop", value="nethop", emoji=get_emoji("nethop")),
+            discord.SelectOption(label="UHC", value="uhc", emoji=get_emoji("uhc")),
+        ]
+
+        super().__init__(
+            placeholder="🎯 Select the gamemode you want to test...",
+            min_values=1,
+            max_values=1,
+            options=options,
+            custom_id="tierbot_test_gamemode"
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        registration = get_registration(interaction.user.id)
+
+        if registration is None:
+            await interaction.followup.send(
+                "❌ **You are not registered yet.**\n\n"
+                "Please register first.",
+                ephemeral=True
+            )
+            return
+
+        gamemode = self.values[0]
+        username = registration[1]
+        region = registration[2]
+
+        account_type = registration[3] if len(registration) >= 4 else "cracked"
+
+        if account_type == "cracked":
+            skin_path = SKINS_DIR / f"{clean_username(username)}.png"
+
+            if not skin_path.is_file():
+                await interaction.followup.send(
+                    "🖼️ **Skin Upload Required**\n\n"
+                    f"Your cracked account **`{username}`** does not have a "
+                    "Minecraft skin uploaded yet.\n\n"
+                    "Please use `/skinupload` and attach your skin file "
+                    "directly from your computer.\n\n"
+                    "After uploading it successfully, come back and click "
+                    "**Request Test** again.",
+                    ephemeral=True
+                )
+                return
+
+        role_name, _ = QUEUE_CONFIG[gamemode]
+
+        role = discord.utils.get(
+            interaction.guild.roles,
+            name=role_name
+        )
+
+        if role is None:
+            await interaction.followup.send(
+                f"❌ Queue role `{role_name}` was not found.",
+                ephemeral=True
+            )
+            return
+
+        if any(
+            str(entry.get("user_id")) == str(interaction.user.id)
+            for entry in load_queue().get(gamemode, [])
+        ):
+            await interaction.followup.send(
+                f"⚠️ You're already in the "
+                f"**{gamemode.title()} queue!**",
+                ephemeral=True
+            )
+            return
+
+        queue = load_queue()
+
+        waitlist_key = f"{gamemode}_waitlist"
+        queue.setdefault(waitlist_key, [])
+
+        # Request Test = waitlist only.
+        # Do NOT add the player to the active queue.
+        if any(
+            str(entry.get("user_id")) == str(interaction.user.id)
+            for entry in queue[waitlist_key]
+        ):
+            await interaction.followup.send(
+                f"⚠️ You're already on the "
+                f"**{gamemode.title()} waitlist!**",
+                ephemeral=True
+            )
+            return
+
+        queue[waitlist_key].append({
+            "user_id": str(interaction.user.id),
+            "username": username,
+            "region": region
+        })
+
+        save_queue(queue)
+
+        try:
+            if role not in interaction.user.roles:
+                await interaction.user.add_roles(
+                    role,
+                    reason=f"Requested {gamemode.title()} tier test"
+                )
+        except discord.Forbidden:
+            await interaction.followup.send(
+                f"❌ I couldn't give you the `{role_name}` role.\n\n"
+                "Please contact an administrator.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.followup.send(
+            f"✅ **Test Request Submitted!**\n\n"
+            f"🎮 **Gamemode:** `{gamemode.title()}`\n"
+            f"👤 **IGN:** `{username}`\n"
+            f"🌍 **Region:** `{region}`\n\n"
+            f"You have been given the `{role_name}` role.",
+            ephemeral=True
+        )
+
+
+
+class TestRequestView(discord.ui.View):
+    def __init__(self, guild=None):
+        super().__init__(timeout=300)
+        self.add_item(TestRequestSelect(guild))
+
+
+class SkinUploadModal(discord.ui.Modal):
+    """Native Discord file-picker for cracked Minecraft skins."""
+
+    def __init__(self):
+        super().__init__(title="Upload Minecraft Skin")
+
+        self.skin_file = discord.ui.FileUpload(
+            custom_id="tierbot_skin_file",
+            required=True,
+            min_values=1,
+            max_values=1
+        )
+
+        self.add_item(
+            discord.ui.Label(
+                text="Minecraft Skin",
+                description="Upload your 64×64 or 128×128 PNG/JPG/JPEG skin.",
+                component=self.skin_file
+            )
+        )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        registration = get_registration(interaction.user.id)
+
+        if registration is None:
+            await interaction.response.send_message(
+                "❌ **You are not registered yet.**\n\n"
+                "Please use **Register / Update** first.",
+                ephemeral=True
+            )
+            return
+
+        username = registration[1]
+        region = registration[2]
+        account_type = (
+            str(registration[3]).strip().lower()
+            if len(registration) >= 4
+            else "cracked"
+        )
+
+        if account_type == "premium":
+            await interaction.response.send_message(
+                "🟦 **Premium account detected.**\n\n"
+                "Your Minecraft skin is handled automatically.",
+                ephemeral=True
+            )
+            return
+
+        files = self.skin_file.values
+
+        if not files:
+            await interaction.response.send_message(
+                "❌ **No skin file was uploaded.**",
+                ephemeral=True
+            )
+            return
+
+        skin = files[0]
+
+        if not skin.filename.lower().endswith((".png", ".jpg", ".jpeg")):
+            await interaction.response.send_message(
+                "❌ **Invalid file.**\n\n"
+                "Please upload a PNG, JPG, or JPEG Minecraft skin.",
+                ephemeral=True
+            )
+            return
+
+        try:
+            skin_data = await skin.read()
+
+            img = Image.open(io.BytesIO(skin_data))
+            img.load()
+
+            if img.size not in ((64, 64), (128, 128)):
+                raise ValueError(
+                    f"Invalid skin size: {img.size}. "
+                    "Minecraft skins must be 64×64 or 128×128."
+                )
+
+            img = img.convert("RGBA")
+
+            SKINS_DIR.mkdir(parents=True, exist_ok=True)
+
+            skin_path = SKINS_DIR / f"{clean_username(username)}.png"
+            img.save(skin_path, "PNG")
+
+        except Exception as error:
+            print(
+                f"SKIN GUI ERROR | User: {interaction.user} | "
+                f"Type: {type(error).__name__} | Error: {error}",
+                flush=True
+            )
+
+            await interaction.response.send_message(
+                "❌ **Skin upload failed.**\n\n"
+                f"`{type(error).__name__}: {error}`",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.send_message(
+            "✅ **Minecraft skin uploaded successfully!**\n\n"
+            f"**Username:** `{username}`\n"
+            f"**Region:** `{region}`\n\n"
+            "You can now use **Request Test**.",
+            ephemeral=True
+        )
+
+        # Send the uploaded skin to the existing private review channel.
+        try:
+            review_buffer = io.BytesIO()
+            img.save(review_buffer, "PNG")
+            review_buffer.seek(0)
+
+            await send_skin_to_private_channel(
+                username,
+                region,
+                "Cracked",
+                review_buffer.getvalue()
+            )
+
+        except Exception as error:
+            print(
+                f"❌ Failed to send GUI-uploaded skin to "
+                f"#{SKINS_CHANNEL_NAME}: {error}",
+                flush=True
+            )
+
+
+class SkinUploadView(discord.ui.View):
+    """Ephemeral launcher for the native Discord skin file picker."""
+
+    def __init__(self):
+        super().__init__(timeout=300)
+
+    @discord.ui.button(
+        label="Upload Skin",
+        style=discord.ButtonStyle.primary,
+        emoji="🖼️"
+    )
+    async def upload_skin_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        await interaction.response.send_modal(SkinUploadModal())
+
+
+# ---------------------------------------------------------
+# 24-hour PER-GAMEMODE test cooldown
+#
+# Stored in queue.json so cooldowns survive bot restarts.
+# Each gamemode has its own independent cooldown.
+# ---------------------------------------------------------
+
+RESTRICTED_ROLE_NAME = "Restricted"
+
+
+def user_is_restricted(member):
+    return any(
+        str(role.name).strip().lower() == RESTRICTED_ROLE_NAME.lower()
+        for role in getattr(member, "roles", [])
+    )
+
+
+TEST_COOLDOWN_SECONDS = 24 * 60 * 60
+
+
+def get_test_cooldown_remaining(user_id, gamemode):
+    import time
+
+    queue = load_queue()
+    cooldowns = queue.get("test_cooldowns", {})
+
+    user_cooldowns = cooldowns.get(str(user_id), {})
+
+    if not isinstance(user_cooldowns, dict):
+        return 0
+
+    mode_key = str(gamemode).lower()
+    expires_at = user_cooldowns.get(mode_key)
+
+    if not expires_at:
+        return 0
+
+    remaining = float(expires_at) - time.time()
+
+    if remaining <= 0:
+        user_cooldowns.pop(mode_key, None)
+
+        if user_cooldowns:
+            cooldowns[str(user_id)] = user_cooldowns
+        else:
+            cooldowns.pop(str(user_id), None)
+
+        if cooldowns:
+            queue["test_cooldowns"] = cooldowns
+        else:
+            queue.pop("test_cooldowns", None)
+
+        save_queue(queue)
+        return 0
+
+    return remaining
+
+
+def set_test_cooldown(user_id, gamemode):
+    import time
+
+    queue = load_queue()
+    cooldowns = queue.setdefault("test_cooldowns", {})
+
+    user_cooldowns = cooldowns.setdefault(
+        str(user_id),
+        {}
+    )
+
+    user_cooldowns[str(gamemode).lower()] = (
+        time.time() + TEST_COOLDOWN_SECONDS
+    )
+
+    save_queue(queue)
+
+
+def format_test_cooldown(seconds):
+    seconds = int(seconds)
+
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+
+    if hours > 0:
+        return f"{hours}h {minutes}m"
+
+    return f"{minutes}m"
+
+
+class RegisterPanelView(discord.ui.View):
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Register / Update",
+        style=discord.ButtonStyle.success,
+        emoji="<:book:1546556004609564763>",
+        custom_id="tierbot_register"
+    )
+    async def register_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        if get_registration(interaction.user.id) is not None:
+            await interaction.response.send_message(
+                "❌ **You are already registered.**\n\n"
+                "Each Discord account can only register once.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.send_message(
+            "📝 **BladeTiers Profile Registration — Step 1/2**\n\n"
+            "Select your Minecraft account type to continue.",
+            view=AccountTypeView(),
+            ephemeral=True
+        )
+
+    @discord.ui.button(
+        label="Request Test",
+        style=discord.ButtonStyle.primary,
+        emoji="<:redstonedust:1546558030043422800>",
+        custom_id="tierbot_request_test"
+    )
+    async def request_test_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        registration = get_registration(interaction.user.id)
+
+        if registration is None:
+            await interaction.response.send_message(
+                "❌ **You are not registered yet.**\n\n"
+                "Please click **Register / Update** first.",
+                ephemeral=True
+            )
+            return
+
+        account_type = (
+            str(registration[3]).strip().lower()
+            if len(registration) >= 4
+            else "cracked"
+        )
+
+        username = registration[1]
+
+        if account_type == "cracked":
+            skin_path = SKINS_DIR / f"{clean_username(username)}.png"
+
+            if not skin_path.exists():
+                await interaction.response.send_message(
+                    "🖼️ **Skin upload required**\n\n"
+                    "You must upload your Minecraft skin before requesting a tier test.",
+                    view=SkinUploadView(),
+                    ephemeral=True
+                )
+                return
+
+        await interaction.response.send_message(
+            "🎯 **Request a Tier Test**\n\n"
+            "Select the gamemode you want to be tested in:",
+            view=TestRequestView(interaction.guild),
+            ephemeral=True
+        )
+
+
+
+@bot.tree.command(
+    name="profile",
+    description="View a BladeTiers player profile.",
+    guild=discord.Object(id=int(os.getenv("GUILD_ID")))
+)
+@app_commands.describe(
+    user="The Discord user whose profile you want to view."
+)
+async def profile(
+    interaction: discord.Interaction,
+    user: discord.Member
+):
+    if interaction.guild is None:
+        await interaction.response.send_message(
+            "❌ **This command can only be used inside the server.**",
+            ephemeral=True
+        )
+        return
+
+    registration = get_registration(user.id)
+
+    if registration is None:
+        await interaction.response.send_message(
+            "❌ **No user found.**\n\n"
+            "This Discord user is not registered with BladeTiers.",
+            ephemeral=True
+        )
+        return
+
+    username = registration[1]
+    region = registration[2]
+
+    account_type = (
+        str(registration[3]).strip().lower()
+        if len(registration) >= 4
+        else "cracked"
+    )
+
+    try:
+        with open(TIERS_FILE, "r", encoding="utf-8") as f:
+            tier_data = json.load(f)
+    except Exception:
+        tier_data = {}
+
+    tiers = {}
+
+    for key, value in tier_data.items():
+        if (
+            str(key).strip().lower() == str(username).strip().lower()
+            and isinstance(value, dict)
+        ):
+            tiers.update(value)
+
+    emoji_names = {
+        "sword": "sword",
+        "vanilla": "ht1",
+        "axe": "axe~1",
+        "pot": "pot",
+        "smp": "smp",
+        "nethop": "nethop",
+        "mace": "mace",
+        "uhc": "uhc",
+        "spear": "spear",
+    }
+
+    modes = [
+        "sword",
+        "vanilla",
+        "axe",
+        "pot",
+        "smp",
+        "nethop",
+        "mace",
+        "uhc",
+    ]
+
+    def get_mode_emoji(mode):
+        emoji_name = emoji_names.get(mode, mode)
+        emoji = discord.utils.get(
+            interaction.guild.emojis,
+            name=emoji_name
+        )
+        return str(emoji) if emoji else ""
+
+    ranks = []
+
+    for mode in modes:
+        tier = tiers.get(mode)
+
+        if tier:
+            emoji = get_mode_emoji(mode)
+            prefix = f"{emoji} " if emoji else ""
+            ranks.append(
+                f"{prefix}**{mode.title()}:** {str(tier).upper()}"
+            )
+
+    for mode, tier in tiers.items():
+        mode_lower = str(mode).lower()
+
+        if mode_lower not in modes and tier:
+            emoji = get_mode_emoji(mode_lower)
+            prefix = f"{emoji} " if emoji else ""
+            ranks.append(
+                f"{prefix}**{str(mode).title()}:** {str(tier).upper()}"
+            )
+
+    rank_text = (
+        "\n".join(ranks)
+        if ranks
+        else "*No gamemode ranks yet.*"
+    )
+
+    promote = discord.utils.get(
+        interaction.guild.emojis,
+        name="promote"
+    )
+
+    com = discord.utils.get(
+        interaction.guild.emojis,
+        name="com"
+    )
+
+    promote_emoji = str(promote) if promote else ""
+    com_emoji = str(com) if com else ""
+
+    embed = discord.Embed(
+        title=f"{username}'s Profile",
+        description=(
+            f"**Discord:** {user.mention}\n"
+            f"**IGN:** `{username}`\n"
+            f"**Region:** `{region}`\n"
+            f"**Account:** `{account_type.title()}`"
+        ),
+        color=discord.Color.from_rgb(57, 255, 20)
+    )
+
+    face_file = None
+
+    if account_type == "premium":
+        safe_username = clean_username(str(username))
+
+        mc_heads_url = (
+            f"https://mc-heads.net/avatar/"
+            f"{safe_username}/256"
+        )
+
+        embed.set_thumbnail(url=mc_heads_url)
+
+        embed.add_field(
+            name="Player Face",
+            value="Premium skin",
+            inline=False
+        )
+
+    else:
+        skin_path = (
+            SKINS_DIR /
+            f"{clean_username(str(username))}.png"
+        )
+
+        if skin_path.is_file():
+            try:
+                with open(skin_path, "rb") as skin_file:
+                    skin_bytes = skin_file.read()
+
+                face_image = create_face(skin_bytes)
+
+                face_buffer = io.BytesIO()
+                face_image.save(face_buffer, format="PNG")
+                face_buffer.seek(0)
+
+                face_file = discord.File(
+                    face_buffer,
+                    filename="player-face.png"
+                )
+
+                embed.set_thumbnail(
+                    url="attachment://player-face.png"
+                )
+
+                embed.add_field(
+                    name="Player Face",
+                    value="Uploaded skin",
+                    inline=False
+                )
+
+            except Exception:
+                embed.add_field(
+                    name="Player Face",
+                    value="Skin could not be loaded",
+                    inline=False
+                )
+        else:
+            embed.add_field(
+                name="Player Face",
+                value="No uploaded skin found",
+                inline=False
+            )
+
+    embed.add_field(
+        name=f"{promote_emoji} Gamemode Ranks".strip(),
+        value=rank_text,
+        inline=False
+    )
+
+    embed.add_field(
+        name=f"{com_emoji} Peak Per Gamemode".strip(),
+        value=rank_text,
+        inline=False
+    )
+
+    embed.set_footer(
+        text="BladeTiers"
+    )
+
+    if face_file:
+        await interaction.response.send_message(
+            embed=embed,
+            file=face_file
+        )
+    else:
+        await interaction.response.send_message(
+            embed=embed
+        )
+
+
+
+@bot.tree.command(
+    name="member",
+    description="Show the total BladeTiers server member count.",
+    guild=discord.Object(id=int(os.getenv("GUILD_ID")))
+)
+async def member(interaction: discord.Interaction):
+    if interaction.guild is None:
+        await interaction.response.send_message(
+            "❌ **This command can only be used inside the server.**",
+            ephemeral=True
+        )
+        return
+
+    count = interaction.guild.member_count
+
+    await interaction.response.send_message(
+        f"👥 **BladeTiers Members**\n\n"
+        f"**Total Members:** `{count}`"
+    )
+
+
+@bot.tree.command(
+    name="cooldown",
+    description="View your BladeTiers testing cooldowns.",
+    guild=discord.Object(id=int(os.getenv("GUILD_ID")))
+)
+async def cooldown(interaction: discord.Interaction):
+    if interaction.guild is None:
+        await interaction.response.send_message(
+            "❌ **This command can only be used inside the server.**",
+            ephemeral=True
+        )
+        return
+
+    gamemodes = [
+        ("vanilla", "Vanilla"),
+        ("uhc", "UHC"),
+        ("pot", "Pot"),
+        ("nethop", "NethOP"),
+        ("smp", "SMP"),
+        ("sword", "Sword"),
+        ("axe", "Axe"),
+        ("mace", "Mace"),
+        ("spear", "Spear"),
+    ]
+
+    lines = []
+
+    for mode_key, display_name in gamemodes:
+        remaining = get_test_cooldown_remaining(
+            interaction.user.id,
+            mode_key
+        )
+
+        if remaining > 0:
+            lines.append(
+                f"🔴 **{display_name}** — "
+                f"`{format_test_cooldown(remaining)} remaining`"
+            )
+        else:
+            lines.append(
+                f"🟢 **{display_name}** — `Available`"
+            )
+
+    embed = discord.Embed(
+        title="⏳ BladeTiers Testing Cooldowns",
+        description="\n".join(lines),
+        color=discord.Color.orange()
+    )
+
+    embed.set_footer(
+        text="Cooldowns are applied separately for each gamemode."
+    )
+
+    await interaction.response.send_message(
+        embed=embed,
+        ephemeral=True
+    )
+
+
+@bot.tree.command(
+    name="compare",
+    description="Compare the BladeTiers ranks of two players.",
+    guild=discord.Object(id=int(os.getenv("GUILD_ID")))
+)
+@app_commands.describe(
+    player1="First Minecraft IGN.",
+    player2="Second Minecraft IGN."
+)
+async def compare(
+    interaction: discord.Interaction,
+    player1: str,
+    player2: str
+):
+    try:
+        with open(TIERS_FILE, "r", encoding="utf-8") as f:
+            tier_data = json.load(f)
+    except Exception:
+        tier_data = {}
+
+    def find_player(query):
+        query = str(query).strip().lower()
+
+        for key, value in tier_data.items():
+            if str(key).strip().lower() == query:
+                if isinstance(value, dict):
+                    return str(key), value
+
+        return None, None
+
+    name1, tiers1 = find_player(player1)
+    name2, tiers2 = find_player(player2)
+
+    if name1 is None:
+        await interaction.response.send_message(
+            f"❌ **Player not found:** `{player1}`\n\n"
+            "Make sure the IGN exists in BladeTiers tier data.",
+            ephemeral=True
+        )
+        return
+
+    if name2 is None:
+        await interaction.response.send_message(
+            f"❌ **Player not found:** `{player2}`\n\n"
+            "Make sure the IGN exists in BladeTiers tier data.",
+            ephemeral=True
+        )
+        return
+
+    gamemodes = [
+        ("vanilla", "Vanilla"),
+        ("uhc", "UHC"),
+        ("pot", "Pot"),
+        ("nethop", "NethOP"),
+        ("smp", "SMP"),
+        ("sword", "Sword"),
+        ("axe", "Axe"),
+        ("mace", "Mace"),
+        ("spear", "Spear"),
+    ]
+
+    def format_tiers(tiers):
+        lines = []
+
+        for mode_key, display_name in gamemodes:
+            tier = tiers.get(mode_key)
+
+            if tier:
+                lines.append(
+                    f"**{display_name}:** `{str(tier).upper()}`"
+                )
+
+        # Also show any future/unknown gamemode stored in tiers.json.
+        known_modes = {mode[0] for mode in gamemodes}
+
+        for mode, tier in tiers.items():
+            mode_lower = str(mode).lower()
+
+            if mode_lower not in known_modes and tier:
+                lines.append(
+                    f"**{str(mode).title()}:** `{str(tier).upper()}`"
+                )
+
+        return "\n".join(lines) if lines else "*No tiers yet.*"
+
+    embed = discord.Embed(
+        title="⚔️ BladeTiers Comparison",
+        color=discord.Color.blurple()
+    )
+
+    embed.add_field(
+        name=f"👤 {name1}",
+        value=format_tiers(tiers1),
+        inline=True
+    )
+
+    embed.add_field(
+        name="VS",
+        value="⚔️",
+        inline=True
+    )
+
+    embed.add_field(
+        name=f"👤 {name2}",
+        value=format_tiers(tiers2),
+        inline=True
+    )
+
+    embed.set_footer(
+        text="BladeTiers • Tier data from tiers.json"
+    )
+
+    await interaction.response.send_message(
+        embed=embed
+    )
+
+
+@bot.tree.command(
+    name="testskinschannel",
+    description="Test whether the bot can access #skins-thing.",
+    guild=discord.Object(id=int(os.getenv("GUILD_ID")))
+)
+async def testskinschannel(interaction: discord.Interaction):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "❌ Administrator only.",
+            ephemeral=True
+        )
+        return
+
+    try:
+        channel = discord.utils.get(
+            bot.get_all_channels(),
+            name=SKINS_CHANNEL_NAME
+        )
+
+        if channel is None:
+            await interaction.response.send_message(
+                f"❌ I cannot find `#{SKINS_CHANNEL_NAME}`.",
+                ephemeral=True
+            )
+            return
+
+        await channel.send(
+            "🧪 **BladeTiers skin channel test successful!**\n"
+            "The bot can see and send messages in this channel."
+        )
+
+        await interaction.response.send_message(
+            f"✅ Test message sent to `#{SKINS_CHANNEL_NAME}`!",
+            ephemeral=True
+        )
+
+    except Exception as error:
+        print(f"❌ Skin channel test failed: {error}")
+        await interaction.response.send_message(
+            f"❌ Failed to send test message: `{error}`",
+            ephemeral=True
+        )
+
+
+@bot.tree.command(name="skinupload", description="Upload or change your Minecraft skin.", guild=discord.Object(id=int(os.getenv("GUILD_ID"))))
+@app_commands.describe(skin="Your Minecraft skin (PNG, JPG or JPEG).")
+async def skinupload(interaction: discord.Interaction, skin: discord.Attachment):
+    registration=get_registration(interaction.user.id)
+    if registration is None:
+        await interaction.response.send_message("❌ **You are not registered yet.**\n\nPlease use **Register / Update** first.",ephemeral=True)
+        return
+    username = registration[1]
+    region = registration[2]
+    account_type = registration[3] if len(registration) >= 4 else "cracked"
+
+    if account_type == "premium":
+        await interaction.response.send_message(
+            "🟦 **Premium account detected.**\n\n"
+            "Premium profiles use their Minecraft skin automatically. "
+            "You do not need `/skinupload`.",
+            ephemeral=True
+        )
+        return
+
+    if not skin.filename.lower().endswith((".png",".jpg",".jpeg")):
+        await interaction.response.send_message("❌ **Invalid file.**\n\nPlease upload a PNG, JPG or JPEG.",ephemeral=True)
+        return
+    try:
+        skin_data=await skin.read()
+
+        # Validate the actual uploaded image with Pillow.
+        img=Image.open(io.BytesIO(skin_data))
+        img.load()
+
+        if img.size not in ((64,64),(128,128)):
+            raise ValueError(f"Invalid skin size: {img.size}")
+
+        # Normalize to RGBA and save the actual skin.
+        img=img.convert("RGBA")
+        SKINS_DIR.mkdir(parents=True,exist_ok=True)
+        img.save(SKINS_DIR/f"{clean_username(username)}.png","PNG")
+    except Exception as error:
+        print(f"SKINUPLOAD REAL ERROR | User: {interaction.user} | Type: {type(error).__name__} | Error: {error}", flush=True)
+        await interaction.response.send_message(
+            f"❌ **Skin upload error**\n`{type(error).__name__}: {error}`",
+            ephemeral=True
+        )
+        return
+    await interaction.response.send_message(f"✅ **Minecraft skin uploaded!**\n\n**Username:** `{username}`\n**Region:** `{region}`",ephemeral=True)
+    
+    # Send the uploaded skin + player information to #skins-thing.
+    try:
+        review_buffer = io.BytesIO()
+        img.save(review_buffer, "PNG")
+        review_buffer.seek(0)
+
+        await send_skin_to_private_channel(
+            username,
+            region,
+            "Cracked",
+            review_buffer.getvalue()
+        )
+
+    except Exception as error:
+        print(
+            f"❌ Failed to send cracked skin to "
+            f"#{SKINS_CHANNEL_NAME}: {error}"
+        )
+
+
+
+
+@bot.tree.command(name="skinchange",description="Change a players Minecraft skin.",guild=discord.Object(id=int(os.getenv("GUILD_ID"))))
+@app_commands.describe(username="Minecraft username of the player.",skin="New Minecraft skin.")
+async def skinchange(interaction: discord.Interaction,username: str,skin: discord.Attachment):
+    if not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message("❌ **Administrator only.**",ephemeral=True)
+    username=clean_username(username)
+    if not username or not skin.filename.lower().endswith((".png",".jpg",".jpeg")):
+        return await interaction.response.send_message("❌ Invalid username or skin file.",ephemeral=True)
+    try:
+        data=await skin.read(); img=Image.open(io.BytesIO(data)).convert("RGBA")
+        if img.size not in ((64,64),(128,128)): raise ValueError("Invalid skin size")
+        create_face(data)
+        SKINS_DIR.mkdir(parents=True,exist_ok=True); img.save(SKINS_DIR/f"{username}.png","PNG")
+        await interaction.response.send_message(f"✅ **Skin changed!**\n\n**Player:** `{username}`\n**File:** `{username}.png`",ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ **Invalid Minecraft skin.** `{type(e).__name__}: {e}`",ephemeral=True)
+@bot.tree.command(name="changemodel", description="Change a player's website model.", guild=discord.Object(id=int(os.getenv("GUILD_ID"))))
+@app_commands.describe(
+    username="Minecraft username of the player.",
+    model="New rendered Minecraft model PNG."
+)
+async def changemodel(
+    interaction: discord.Interaction,
+    username: str,
+    model: discord.Attachment
+):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "❌ You don't have permission to use this command.",
+            ephemeral=True
+        )
+        return
+
+    safe_username = clean_username(username)
+
+    if not safe_username:
+        await interaction.response.send_message(
+            "❌ Invalid Minecraft username.",
+            ephemeral=True
+        )
+        return
+
+    if not model.filename.lower().endswith(".png"):
+        await interaction.response.send_message(
+            "❌ The model must be a PNG file.",
+            ephemeral=True
+        )
+        return
+
+    try:
+        data = await model.read()
+        img = Image.open(io.BytesIO(data)).convert("RGBA")
+
+        model_dir = BASE_DIR / "skin_website"
+        model_dir.mkdir(parents=True, exist_ok=True)
+
+        output = model_dir / f"{safe_username}model.png"
+        img.save(output, "PNG")
+
+        await interaction.response.send_message(
+            f"✅ **Model updated successfully!**\n\n"
+            f"**Player:** `{username}`\n"
+            f"**File:** `{output.name}`",
+            ephemeral=True
+        )
+
+        print(f"Model changed | Player: {username} | Admin: {interaction.user}")
+
+    except Exception as error:
+        await interaction.response.send_message(
+            f"❌ **Upload failed:** `{type(error).__name__}: {error}`",
+            ephemeral=True
+        )
+        print(f"Model change failed | Player: {username} | Error: {error}")
+
+@bot.tree.command(name="modelupload", description="Upload your rendered Minecraft model.", guild=discord.Object(id=int(os.getenv("GUILD_ID"))))
+@app_commands.describe(model="Your rendered model image (PNG, JPG or JPEG).")
+async def modelupload(interaction: discord.Interaction, model: discord.Attachment):
+    registration=get_registration(interaction.user.id)
+    if registration is None:
+        await interaction.response.send_message("❌ **You are not registered yet.**\n\nPlease use **Register / Update** first.",ephemeral=True)
+        return
+    username = registration[1]
+    region = registration[2]
+    account_type = registration[3] if len(registration) >= 4 else "cracked"
+
+    if account_type == "premium":
+        await interaction.response.send_message(
+            "🟦 **Premium account detected.**\n\n"
+            "Premium profiles use their Minecraft skin automatically.",
+            ephemeral=True
+        )
+        return
+
+    try:
+        from PIL import Image
+        import io
+        data=await model.read()
+        img=Image.open(io.BytesIO(data)).convert("RGBA")
+        SKIN_WEBSITE_DIR.mkdir(parents=True,exist_ok=True)
+        img.save(SKIN_WEBSITE_DIR/f"{clean_username(username)}model.png","PNG")
+    except Exception as error:
+        await interaction.response.send_message(f"❌ **Upload failed:** `{type(error).__name__}: {error}`",ephemeral=True)
+        print(f"Model upload failed | User: {interaction.user} | Error: {error}")
+        return
+    await interaction.response.send_message(f"✅ **Rendered model uploaded!**\n\n**Username:** `{username}`\n**Region:** `{region}`\n\n🌐 Your website model has been updated.",ephemeral=True)
+
+
+
+def panel_emoji(guild, name):
+    if guild is None:
+        return ""
+    emoji = discord.utils.get(guild.emojis, name=name)
+    return str(emoji) if emoji else ""
+
+
+@bot.tree.command(
+    name="reghere",
+    description="Send the public tier test registration panel."
+)
+async def reghere(
+    interaction: discord.Interaction
+):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "❌ You don't have permission to use this command.",
+            ephemeral=True
+        )
+        return
+
+    embed = discord.Embed(
+        title=f"{panel_emoji(interaction.guild, 'ht1')} BladeTiers Profile Registration",
+        description=(
+            "Welcome to **BladeTiers**!\n\n"
+            "Register your Minecraft profile and request a tier test. "
+            "Use the buttons below to continue.\n\n"
+            f"{panel_emoji(interaction.guild, 'ban_hammar')} **Minecraft username is case-sensitive.**"
+        ),
+        color=discord.Color.from_rgb(57, 255, 20)
+    )
+
+    embed.add_field(
+        name=f"{panel_emoji(interaction.guild, 'promote')} Register / Update",
+        value="Choose Premium or Cracked, then enter your Minecraft username and region.",
+        inline=False
+    )
+
+    embed.add_field(
+        name=f"{panel_emoji(interaction.guild, 'promote')} Upload / Change Skin",
+        value="Cracked users can upload or replace their Minecraft skin.",
+        inline=False
+    )
+
+    embed.add_field(
+        name=f"{panel_emoji(interaction.guild, 'ace')} Request Test",
+        value="Request a tier test after registering your profile.",
+        inline=False
+    )
+
+    await interaction.response.send_message(
+        embed=embed,
+        view=RegisterPanelView()
+    )
+
+    panel_message = await interaction.original_response()
+
+    with open(
+        PANEL_FILE,
+        "w",
+        encoding="utf-8"
+    ) as f:
+        json.dump(
+            {
+                "channel_id": interaction.channel.id,
+                "message_id": panel_message.id
+            },
+            f,
+            indent=2
+        )
+
+
+
+
+async def create_tier_test_ticket(
+    guild,
+    gamemode,
+    tester,
+    player_entry
+):
+    """Create a private tier-test ticket."""
+    username = player_entry.get("username", "Unknown")
+    player_id = int(player_entry["user_id"])
+
+    category = discord.utils.get(
+        guild.categories,
+        name=TEST_TICKET_CATEGORY_NAME
+    )
+
+    if category is None:
+        raise RuntimeError(
+            f'Category "{TEST_TICKET_CATEGORY_NAME}" was not found.'
+        )
+
+    player = guild.get_member(player_id)
+
+    if player is None:
+        player = await guild.fetch_member(player_id)
+
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(
+            view_channel=False
+        ),
+        tester: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+            attach_files=True,
+            embed_links=True
+        ),
+        player: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+            attach_files=True,
+            embed_links=True
+        ),
+        guild.me: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            manage_channels=True,
+            manage_messages=True,
+            read_message_history=True,
+            embed_links=True
+        )
+    }
+
+    safe_name = clean_username(username).lower()
+
+    ticket = await guild.create_text_channel(
+        name=f"{gamemode}-test-{safe_name}",
+        category=category,
+        overwrites=overwrites,
+        reason=(
+            f"{gamemode.title()} tier test taken by "
+            f"{tester}"
+        )
+    )
+
+    embed = discord.Embed(
+        title=f"🧪 {gamemode.title()} Tier Test",
+        description=(
+            f"**Player:** {player.mention}\n"
+            f"**IGN:** `{username}`\n"
+            f"**Region:** `{player_entry.get('region', 'Unknown')}`\n"
+            f"**Tester:** {tester.mention}\n\n"
+            "🎯 **Only the assigned tester can select "
+            "the final tier.**\n\n"
+            "Good luck with the test! 🍀"
+        ),
+        color=discord.Color.from_rgb(57, 255, 20)
+    )
+
+    view = TierResultView(
+        gamemode=gamemode,
+        tester_id=tester.id,
+        player_entry=player_entry
+    )
+
+    await ticket.send(
+        content=f"{tester.mention} {player.mention}",
+        embed=embed,
+        view=view,
+        allowed_mentions=discord.AllowedMentions(users=True)
+    )
+
+    return ticket
+
+
+class QueuePanelView(discord.ui.View):
+
+    def __init__(self, gamemode):
+        super().__init__(timeout=None)
+        self.gamemode = gamemode
+
+        # Make Join/Leave IDs unique for every gamemode.
+        # This prevents Discord from confusing buttons between queue panels.
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                if child.label == "Join":
+                    child.custom_id = f"tierbot_queue_join_{gamemode}"
+                elif child.label == "Leave":
+                    child.custom_id = f"tierbot_queue_leave_{gamemode}"
+
+        take_button = discord.ui.Button(
+            label="Take #1",
+            style=discord.ButtonStyle.primary,
+            emoji="🎯",
+            custom_id=f"tierbot_queue_take_1_{gamemode}"
+        )
+
+        async def take_callback(interaction):
+            await self.take_one_button(
+                interaction,
+                take_button
+            )
+
+        take_button.callback = take_callback
+        self.add_item(take_button)
+
+    @discord.ui.button(
+        label="Join",
+        style=discord.ButtonStyle.success,
+        emoji="✅",
+        custom_id="tierbot_queue_join"
+    )
+    async def join_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ This can only be used inside a server.",
+                ephemeral=True
+            )
+            return
+
+        registration = get_registration(
+            interaction.user.id
+        )
+
+        if registration is None:
+            await interaction.response.send_message(
+                "❌ **You are not registered yet.**\n\n"
+                "Use the **Register / Update** button first.",
+                ephemeral=True
+            )
+            return
+
+        username = registration[1]
+        region = registration[2]
+
+        role_name, _ = QUEUE_CONFIG[self.gamemode]
+
+        role = discord.utils.get(
+            interaction.guild.roles,
+            name=role_name
+        )
+
+        if role is None:
+            await interaction.response.send_message(
+                f"❌ Queue role `{role_name}` was not found.",
+                ephemeral=True
+            )
+            return
+
+        # -------------------------------------------------
+        # Prevent duplicate entry in the SAME gamemode only.
+        # Players may be in multiple gamemode queues.
+        # -------------------------------------------------
+
+        queue = load_queue()
+        queue.setdefault(self.gamemode, [])
+
+        waitlist_key = f"{self.gamemode}_waitlist"
+        queue.setdefault(waitlist_key, [])
+
+        user_id = str(interaction.user.id)
+
+        # -------------------------------------------------
+        # 24-hour cooldown for THIS gamemode only.
+        # -------------------------------------------------
+
+        if user_is_restricted(interaction.user):
+            await interaction.response.send_message(
+                "🚫 **You are Restricted.**\n\n"
+                "You cannot join any tier-testing queue while you have "
+                "the **Restricted** role.\n\n"
+                "Please contact BladeTiers staff if you believe this is a mistake.",
+                ephemeral=True
+            )
+            return
+
+        cooldown_remaining = get_test_cooldown_remaining(
+            interaction.user.id,
+            self.gamemode
+        )
+
+        if cooldown_remaining > 0:
+            await interaction.response.send_message(
+                "⏳ **You are on a testing cooldown for this gamemode.**\n\n"
+                f"You recently completed a **{self.gamemode.title()}** tier test.\n"
+                "You must wait 24 hours before joining this gamemode again.\n\n"
+                f"**Time remaining:** `{format_test_cooldown(cooldown_remaining)}`\n\n"
+                "You can still join other gamemodes that aren't on cooldown.",
+                ephemeral=True
+            )
+            return
+
+        # -------------------------------------------------
+        # JOIN = move this user from waitlist to active queue.
+        # Request Test only puts users on the waitlist.
+        # -------------------------------------------------
+
+        if any(
+            str(entry.get("user_id")) == user_id
+            for entry in queue[self.gamemode]
+        ):
+            await interaction.response.send_message(
+                "⚠️ **You're already in this queue!**",
+                ephemeral=True
+            )
+            return
+
+        waitlist_entry = next(
+            (
+                entry for entry in queue[waitlist_key]
+                if str(entry.get("user_id")) == user_id
+            ),
+            None
+        )
+
+        if waitlist_entry is None:
+            await interaction.response.send_message(
+                f"❌ You're not on the **{self.gamemode.title()} waitlist**.\n\n"
+                "Use **Request Test** first.",
+                ephemeral=True
+            )
+            return
+
+        # Maximum 30 players per active queue.
+        if len(queue[self.gamemode]) >= 30:
+            await interaction.response.send_message(
+                f"❌ **This {self.gamemode.title()} queue is full!**\n\n"
+                "**Maximum:** `30/30` players.",
+                ephemeral=True
+            )
+            return
+
+        # Save whether this queue was empty BEFORE joining.
+        was_empty = len(queue[self.gamemode]) == 0
+
+        # Remove only this user from the waitlist.
+        queue[waitlist_key] = [
+            entry for entry in queue[waitlist_key]
+            if str(entry.get("user_id")) != user_id
+        ]
+
+        # Add this user to the active queue.
+        queue[self.gamemode].append({
+            "user_id": user_id,
+            "username": username,
+            "region": region
+        })
+
+        save_queue(queue)
+
+        if role not in interaction.user.roles:
+            try:
+                await interaction.user.add_roles(
+                    role,
+                    reason=f"Joined {self.gamemode.title()} queue"
+                )
+            except discord.Forbidden:
+                pass
+
+        position = len(queue[self.gamemode])
+
+        await interaction.response.send_message(
+            f"✅ **You joined the {self.gamemode.title()} queue!**\n\n"
+            f"**Position:** `#{position}`\n"
+            f"**Username:** `{username}`\n"
+            f"**Region:** `{region}`",
+            ephemeral=True
+        )
+
+        # -------------------------------------------------
+        # DM ONLY the person who becomes #1
+        # -------------------------------------------------
+
+        if was_empty:
+            try:
+                await interaction.user.send(
+                    f"🧪 You're **#1** in the "
+                    f"**{self.gamemode.title()} tier-test queue!**"
+                )
+            except (
+                discord.Forbidden,
+                discord.HTTPException
+            ):
+                pass
+
+        await interaction.message.edit(
+            embed=await build_queue_embed(
+                interaction.guild,
+                self.gamemode
+            ),
+            view=self
+        )
+
+    async def take_one_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except discord.InteractionResponded:
+            pass
+
+        if interaction.guild is None:
+            await interaction.followup.send(
+                "❌ This can only be used inside a server.",
+                ephemeral=True
+            )
+            return
+
+        async with queue_take_lock:
+
+            queue = load_queue()
+
+            queue.setdefault(
+                self.gamemode,
+                []
+            )
+
+            # -------------------------------------------------
+            # ONLY THE TESTER WHO OPENED THIS QUEUE
+            # -------------------------------------------------
+
+            active_tester_id = get_active_tester(
+                self.gamemode
+            )
+
+            if not active_tester_id:
+                await interaction.followup.send(
+                    "❌ **No tester is assigned to this queue.**",
+                    ephemeral=True
+                )
+                return
+
+            if str(interaction.user.id) != str(
+                active_tester_id
+            ):
+                await interaction.followup.send(
+                    "❌ **Only the tester who opened this queue "
+                    "can Take #1.**",
+                    ephemeral=True
+                )
+                return
+
+            if not queue[self.gamemode]:
+                await interaction.followup.send(
+                    "❌ **The queue is empty.**",
+                    ephemeral=True
+                )
+                return
+
+            player_entry = dict(
+                queue[self.gamemode][0]
+            )
+
+            player_id = str(
+                player_entry["user_id"]
+            )
+
+            username = player_entry.get(
+                "username",
+                "Unknown"
+            )
+
+            # -------------------------------------------------
+            # Move #1 into currently testing.
+            # -------------------------------------------------
+
+            queue[self.gamemode] = [
+                entry
+                for entry in queue[self.gamemode]
+                if str(entry.get("user_id")) != player_id
+            ]
+
+            # Save immediately so the player is really gone
+            # from #1 before the public panel is rebuilt.
+            save_queue(queue)
+
+            # IMPORTANT:
+            # Do NOT save currently_testing yet.
+            # The ticket must be created successfully first.
+            #
+            # This prevents a bot restart/crash between queue
+            # state saving and ticket creation from leaving a
+            # stale *_currently_testing entry behind.
+            #
+            # The tester remains the person who ran /openqueue.
+
+            # -------------------------------------------------
+            # Remove queue role.
+            # -------------------------------------------------
+
+            try:
+                role_name, _ = QUEUE_CONFIG[
+                    self.gamemode
+                ]
+
+                player = interaction.guild.get_member(
+                    int(player_id)
+                )
+
+                if player is None:
+                    player = await interaction.guild.fetch_member(
+                        int(player_id)
+                    )
+
+                role = discord.utils.get(
+                    interaction.guild.roles,
+                    name=role_name
+                )
+
+                if role and role in player.roles:
+                    await player.remove_roles(
+                        role,
+                        reason=(
+                            f"Taken for {self.gamemode.title()} "
+                            "tier test"
+                        )
+                    )
+
+            except (
+                discord.NotFound,
+                discord.Forbidden,
+                discord.HTTPException,
+                ValueError,
+                TypeError
+            ):
+                pass
+
+            # -------------------------------------------------
+            # Create private ticket.
+            # -------------------------------------------------
+
+            try:
+                ticket = await create_tier_test_ticket(
+                    interaction.guild,
+                    self.gamemode,
+                    interaction.user,
+                    player_entry
+                )
+
+                # Add this player to Currently Testing only
+                # AFTER the ticket was created successfully.
+                queue = load_queue()
+
+                current_key = (
+                    f"{self.gamemode}_currently_testing"
+                )
+
+                currently_testing = queue.get(
+                    current_key,
+                    []
+                )
+
+                if isinstance(currently_testing, str):
+                    currently_testing = [currently_testing]
+
+                if not isinstance(currently_testing, list):
+                    currently_testing = []
+
+                if not any(
+                    clean_username(str(name))
+                    == clean_username(str(username))
+                    for name in currently_testing
+                ):
+                    currently_testing.append(username)
+
+                queue[current_key] = currently_testing
+                save_queue(queue)
+
+            except Exception as error:
+                import traceback
+                print(
+                    f"❌ Failed creating tier-test ticket: "
+                    f"{type(error).__name__}: {error}",
+                    flush=True
+                )
+                traceback.print_exc()
+
+                queue = load_queue()
+
+                queue.setdefault(
+                    self.gamemode,
+                    []
+                )
+
+                queue[self.gamemode].insert(
+                    0,
+                    player_entry
+                )
+
+                save_queue(queue)
+
+                await interaction.followup.send(
+                    "❌ **Couldn't create the testing ticket.**\n"
+                    "The player was returned to #1.",
+                    ephemeral=True
+                )
+                return
+
+            # -------------------------------------------------
+            # Update queue panel.
+            # -------------------------------------------------
+
+            await interaction.followup.send(
+                f"🎯 **You took #1 — {username}!**\n"
+                f"🎫 Ticket: {ticket.mention}",
+                ephemeral=True
+            )
+
+            try:
+                await interaction.message.edit(
+                    embed=await build_queue_embed(
+                        interaction.guild,
+                        self.gamemode
+                    ),
+                    view=self
+                )
+
+            except (
+                discord.NotFound,
+                discord.Forbidden,
+                discord.HTTPException
+            ):
+                pass
+
+
+    @discord.ui.button(
+        label="Leave",
+        style=discord.ButtonStyle.danger,
+        emoji="❌",
+        custom_id="tierbot_queue_leave"
+    )
+    async def leave_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button
+    ):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ This can only be used inside a server.",
+                ephemeral=True
+            )
+            return
+
+        role_name, _ = QUEUE_CONFIG[self.gamemode]
+
+        queue = load_queue()
+        queue.setdefault(self.gamemode, [])
+
+        user_id = str(interaction.user.id)
+
+        old_length = len(
+            queue[self.gamemode]
+        )
+
+        queue[self.gamemode] = [
+            entry
+            for entry in queue[self.gamemode]
+            if str(entry.get("user_id")) != user_id
+        ]
+
+        if len(queue[self.gamemode]) == old_length:
+            await interaction.response.send_message(
+                "⚠️ **You're not in this queue.**",
+                ephemeral=True
+            )
+            return
+
+        save_queue(queue)
+
+        role = discord.utils.get(
+            interaction.guild.roles,
+            name=role_name
+        )
+
+        if role and role in interaction.user.roles:
+            try:
+                await interaction.user.remove_roles(
+                    role,
+                    reason=f"Left {self.gamemode.title()} queue"
+                )
+            except discord.Forbidden:
+                pass
+
+        await interaction.response.send_message(
+            f"👋 **You left the {self.gamemode.title()} queue.**",
+            ephemeral=True
+        )
+
+        await interaction.message.edit(
+            embed=await build_queue_embed(
+                interaction.guild,
+                self.gamemode
+            ),
+            view=self
+        )
+
+
+
+@bot.tree.command(
+    name="openqueue",
+    description="Open a public tier test queue."
+)
+@app_commands.describe(
+    gamemode="Gamemode queue to open.",
+    server="Minecraft server IP for this queue."
+)
+@app_commands.choices(
+    gamemode=[
+        app_commands.Choice(
+            name="Axe",
+            value="axe"
+        ),
+        app_commands.Choice(
+            name="Sword",
+            value="sword"
+        ),
+        app_commands.Choice(
+            name="Vanilla",
+            value="vanilla"
+        ),
+        app_commands.Choice(
+            name="SMP",
+            value="smp"
+        ),
+        app_commands.Choice(
+            name="Pot",
+            value="pot"
+        ),
+        app_commands.Choice(
+            name="Mace",
+            value="mace"
+        ),
+        app_commands.Choice(
+            name="Nethop",
+            value="nethop"
+        ),
+        app_commands.Choice(
+            name="UHC",
+            value="uhc"
+        ),
+        app_commands.Choice(
+            name="Spear",
+            value="spear"
+        )
+    ]
+)
+async def openqueue(
+    interaction: discord.Interaction,
+    gamemode: app_commands.Choice[str],
+    server: str
+):
+    # ACK immediately so Discord does not expire the interaction.
+    await interaction.response.defer(ephemeral=True)
+
+    if interaction.guild is None:
+        await interaction.followup.send(
+            "❌ This can only be used inside a server.",
+            ephemeral=True
+        )
+        return
+
+    tester_role = discord.utils.get(
+        interaction.guild.roles,
+        name=TESTER_TEAM_ROLE_NAME
+    )
+
+    is_tester = (
+        tester_role is not None
+        and tester_role in interaction.user.roles
+    )
+
+    if (
+        not is_tester
+        and not interaction.user.guild_permissions.manage_messages
+    ):
+        await interaction.followup.send(
+            "❌ **TESTER TEAM only.**",
+            ephemeral=True
+        )
+        return
+
+    mode = gamemode.value
+    server = server.strip()
+
+    if not server:
+        await interaction.followup.send(
+            "❌ Please provide a server IP.",
+            ephemeral=True
+        )
+        return
+
+    emoji_names={"axe":"axe","sword":"sword","vanilla":"vanilla","smp":"smp","pot":"pot","mace":"mace","nethop":"nethop","uhc":"uhc"}
+    mode_emoji=discord.utils.get(interaction.guild.emojis,name=emoji_names.get(mode.lower()))
+    emoji_text=str(mode_emoji) if mode_emoji else ""
+
+    _, channel_name = QUEUE_CONFIG[mode]
+
+    channel = discord.utils.get(
+        interaction.guild.text_channels,
+        name=channel_name
+    )
+
+    if channel is None:
+        await interaction.followup.send(
+            f"❌ Channel `#{channel_name}` was not found.",
+            ephemeral=True
+        )
+        return
+
+    # Remove the previous closed-status message when reopening.
+    queue = load_queue()
+    closed_message_id = queue.pop(f"{mode}_closed_message_id", None)
+
+    if closed_message_id:
+        try:
+            closed_message = await channel.fetch_message(
+                int(closed_message_id)
+            )
+            await closed_message.delete()
+        except Exception:
+            pass
+
+    queue[f"{mode}_server"] = server
+    save_queue(queue)
+
+    # The person opening the queue becomes the active tester.
+    set_active_tester(mode, interaction.user.id)
+
+    embed = await build_queue_embed(
+        interaction.guild,
+        mode
+    )
+
+    waitlist_role_name, _ = QUEUE_CONFIG[mode]
+    waitlist_role = discord.utils.get(
+        interaction.guild.roles,
+        name=waitlist_role_name
+    )
+
+    announcement_content = (
+        waitlist_role.mention
+        if waitlist_role is not None
+        else f"@{waitlist_role_name}"
+    )
+
+    panel_message = await channel.send(
+        content=announcement_content,
+        embed=embed,
+        view=QueuePanelView(mode),
+        allowed_mentions=discord.AllowedMentions(
+            roles=True
+        )
+    )
+
+    # Store the exact panel message so future refreshes can
+    # fetch it directly instead of scanning channel history.
+    queue = load_queue()
+    queue[f"{mode}_panel_message_id"] = panel_message.id
+    save_queue(queue)
+
+    await interaction.followup.send(
+        f"✅ **{mode.title()} queue opened!**\n"
+        f"Posted in {channel.mention}.",
+        ephemeral=True
+    )
+
+
+for _queue_mode in QUEUE_CONFIG:
+    bot.add_view(
+        QueuePanelView(_queue_mode)
+    )
+
+bot.add_view(
+    RegisterPanelView()
+)
+
+
+
+def save_player_tier(username, gamemode, tier):
+    if TIERS_FILE.exists():
+        try:
+            with open(TIERS_FILE, "r", encoding="utf-8") as f:
+                tiers = json.load(f)
+        except Exception:
+            tiers = {}
+    else:
+        tiers = {}
+
+    player_key = clean_username(username)
+    mode_key = gamemode.strip().lower()
+
+    if player_key not in tiers:
+        tiers[player_key] = {}
+
+    tiers[player_key][mode_key] = tier.upper()
+
+    with open(TIERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(tiers, f, indent=2)
+
+
+def get_player_tier(username, gamemode):
+    if not TIERS_FILE.exists():
+        return "Unranked"
+
+    try:
+        with open(
+            TIERS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as f:
+            tiers = json.load(f)
+    except Exception:
+        return "Unranked"
+
+    return (
+        tiers
+        .get(clean_username(username), {})
+        .get(gamemode.strip().lower(), "Unranked")
+    )
+
+
+@bot.tree.command(
+    name="settier",
+    description="Set a player's tier directly."
+)
+@app_commands.describe(
+    player="The Discord user whose tier you want to set.",
+    gamemode="The gamemode.",
+    tier="The tier to assign."
+)
+@app_commands.choices(
+    gamemode=[
+        app_commands.Choice(name=mode.title(), value=mode)
+        for mode in QUEUE_CONFIG
+    ],
+    tier=[
+        app_commands.Choice(name=tier, value=tier)
+        for tier in TIERS
+    ]
+)
+async def settier(
+    interaction: discord.Interaction,
+    player: discord.Member,
+    gamemode: app_commands.Choice[str],
+    tier: app_commands.Choice[str]
+):
+    if not can_give_result(interaction.user):
+        await interaction.response.send_message(
+            "❌ You don't have permission to use this command.",
+            ephemeral=True
+        )
+        return
+
+    registration = get_registration(player.id)
+
+    if registration is None:
+        await interaction.response.send_message(
+            f"❌ **{player.display_name}** is not registered.",
+            ephemeral=True
+        )
+        return
+
+    username = registration[1]
+    selected_gamemode = gamemode.value
+    selected_tier = tier.value.upper()
+
+    save_player_tier(
+        username,
+        selected_gamemode,
+        selected_tier
+    )
+
+    await interaction.response.send_message(
+        f"✅ **Tier updated!**\n\n"
+        f"**Player:** {player.mention}\n"
+        f"**Username:** `{username}`\n"
+        f"**Gamemode:** `{selected_gamemode}`\n"
+        f"**Tier:** `{selected_tier}`",
+        ephemeral=False
+    )
+
+
+@bot.tree.command(
+    name="giveresult",
+    description="Give a player their tier test result."
+)
+@app_commands.describe(
+    player="The Discord user who was tested.",
+    region="The player's region.",
+    username="The player's Minecraft username.",
+    gamemode="The gamemode tested.",
+    previous_tier="The player's previous tier.",
+    new_tier="The player's new tier."
+)
+@app_commands.choices(
+    region=[
+        app_commands.Choice(
+            name=region,
+            value=region
+        )
+        for region in REGIONS
+    ],
+    previous_tier=[
+        app_commands.Choice(
+            name=tier,
+            value=tier
+        )
+        for tier in TIERS
+    ],
+    new_tier=[
+        app_commands.Choice(
+            name=tier,
+            value=tier
+        )
+        for tier in TIERS
+    ]
+)
+async def giveresult(
+    interaction: discord.Interaction,
+    player: discord.Member,
+    region: app_commands.Choice[str],
+    username: str,
+    gamemode: str,
+    previous_tier: app_commands.Choice[str],
+    new_tier: app_commands.Choice[str]
+):
+    if not can_give_result(interaction.user):
+        await interaction.response.send_message(
+            "❌ You don't have permission to use this command.",
+            ephemeral=True
+        )
+        return
+
+    safe_username = clean_username(username)
+
+    registration = get_registration(player.id)
+
+    account_type = "cracked"
+
+    if registration is not None and len(registration) >= 4:
+        account_type = registration[3]
+
+    skin_path = (
+        SKINS_DIR /
+        f"{safe_username}.png"
+    )
+
+    image_found = skin_path.is_file()
+
+    tier = new_tier.value.upper()
+
+    save_player_tier(
+        username,
+        gamemode,
+        tier
+    )
+
+    if "5" in tier:
+        embed_color = discord.Color.from_rgb(
+            140, 255, 0
+        )
+    elif "4" in tier:
+        embed_color = discord.Color.from_rgb(
+            255, 230, 0
+        )
+    elif "3" in tier:
+        embed_color = discord.Color.from_rgb(
+            255, 255, 255
+        )
+    elif "2" in tier:
+        embed_color = discord.Color.from_rgb(
+            255, 180, 0
+        )
+    elif "1" in tier:
+        embed_color = discord.Color.from_rgb(
+            70, 140, 255
+        )
+    else:
+        embed_color = discord.Color.blurple()
+
+    embed = discord.Embed(
+        title=f"🏆 Tier Test Result — {username}",
+        color=embed_color
+    )
+
+    embed.add_field(
+        name="Tester",
+        value=interaction.user.display_name,
+        inline=False
+    )
+
+    embed.add_field(
+        name="Region",
+        value=region.value,
+        inline=False
+    )
+
+    embed.add_field(
+        name="Username",
+        value=username,
+        inline=False
+    )
+
+    embed.add_field(
+        name="Gamemode",
+        value=gamemode,
+        inline=False
+    )
+
+    embed.add_field(
+        name="Previous Tier",
+        value=previous_tier.value,
+        inline=False
+    )
+
+    embed.add_field(
+        name="New Tier",
+        value=new_tier.value,
+        inline=False
+    )
+
+    if account_type == "premium":
+        # Premium players use their live Minecraft skin from MCHeads.
+        mc_heads_url = (
+            f"https://mc-heads.net/avatar/{safe_username}/256"
+        )
+
+        embed.add_field(
+            name="Player Face",
+            value="🟦 Premium skin loaded from MCHeads",
+            inline=False
+        )
+
+        embed.set_thumbnail(
+            url=mc_heads_url
+        )
+
+        await interaction.response.send_message(
+            content=player.mention,
+            embed=embed
+        )
+
+    elif image_found:
+        embed.add_field(
+            name="Player Face",
+            value="✅ User image found",
+            inline=False
+        )
+
+        embed.set_thumbnail(
+            url="attachment://player-face.png"
+        )
+
+        with open(
+            skin_path,
+            "rb"
+        ) as face_file:
+            face_image = create_face(
+                face_file.read()
+            )
+
+        face_buffer = io.BytesIO()
+
+        face_image.save(
+            face_buffer,
+            format="PNG"
+        )
+
+        face_buffer.seek(0)
+
+        discord_file = discord.File(
+            face_buffer,
+            filename="player-face.png"
+        )
+
+        await interaction.response.send_message(
+            content=player.mention,
+            embed=embed,
+            file=discord_file
+        )
+
+    else:
+        embed.add_field(
+            name="Player Face",
+            value="❌ Error - user image not found",
+            inline=False
+        )
+
+        await interaction.response.send_message(
+            content=player.mention,
+            embed=embed
+        )
+
+
+    # -----------------------------------------------------
+    # Finish the player's queue position.
+    # Remove them and DM the new #1 automatically.
+    # -----------------------------------------------------
+
+    removed_mode = await remove_player_from_queue(
+        interaction.guild,
+        player.id,
+        gamemode.strip().lower()
+    )
+
+    if removed_mode:
+        print(
+            f"Queue completed | "
+            f"Player: {player} | "
+            f"Gamemode: {removed_mode}"
+        )
+
+    print(
+        f"Result created | "
+        f"Username: {username} | "
+        f"Tester: {interaction.user} | "
+        f"Tier: {previous_tier.value} -> "
+        f"{new_tier.value} | "
+        f"Face found: {image_found}"
+    )
+
+
+
+@bot.command(name="delq")
+async def delq(ctx):
+    if not ctx.guild or not (
+        ctx.author.guild_permissions.administrator
+        or has_role(ctx.author, "TESTER TEAM")
+    ):
+        return await ctx.send(
+            "❌ You don't have permission to use this command.",
+            delete_after=5
+        )
+
+    mode = next(
+        (
+            m for m, (_, ch) in QUEUE_CONFIG.items()
+            if ch == ctx.channel.name
+        ),
+        None
+    )
+
+    if not mode:
+        return await ctx.send(
+            "❌ This is not a queue channel.",
+            delete_after=5
+        )
+
+    queue = load_queue()
+
+    entries = queue.get(mode, [])
+
+    if not isinstance(entries, list):
+        entries = []
+
+    role = discord.utils.get(
+        ctx.guild.roles,
+        name=QUEUE_CONFIG[mode][0]
+    )
+
+    for entry in entries:
+        try:
+            member = (
+                ctx.guild.get_member(int(entry["user_id"]))
+                or await ctx.guild.fetch_member(
+                    int(entry["user_id"])
+                )
+            )
+
+            if role and role in member.roles:
+                await member.remove_roles(
+                    role,
+                    reason=f"{mode.title()} queue cleared"
+                )
+
+        except Exception:
+            pass
+
+    queue[mode] = []
+    queue.pop(mode + "_active_tester", None)
+    queue.pop(f"{mode}_server", None)
+
+    save_queue(queue)
+
+    # Clear the queue channel without deleting the owner's messages.
+    try:
+        owner_id = 1359186600797671507
+
+        messages_to_delete = []
+
+        async for message in ctx.channel.history(limit=None):
+            if message.author.id != owner_id:
+                messages_to_delete.append(message)
+
+        # Delete in batches to avoid Discord's bulk-delete age limit.
+        for i in range(0, len(messages_to_delete), 100):
+            batch = messages_to_delete[i:i + 100]
+
+            if batch:
+                await ctx.channel.delete_messages(batch)
+
+    except Exception as error:
+        print(
+            f"❌ Queue purge failed in #{ctx.channel.name}: {error}"
+        )
+
+    # Post queue-closed status message for every gamemode
+    emoji_names={"axe":["axe~1","axe"],"sword":["sword~2","sword"],"vanilla":["vanilla"],"smp":["smp"],"pot":["pot"],"mace":["mace"],"nethop":["nethop"],"uhc":["uhc"],"spear":["spear"]}
+    mode_emoji=next((discord.utils.get(ctx.guild.emojis,name=n) for n in emoji_names.get(mode,[mode]) if discord.utils.get(ctx.guild.emojis,name=n)),None)
+    emoji_text=str(mode_emoji) if mode_emoji else ""
+    closed_embed = discord.Embed(
+        title=f"{emoji_text} {mode.upper()} QUEUE CLOSED",
+        description=f"The {mode.title()} tier test queue is currently closed.",
+        color=discord.Color.red()
+    )
+    closed_embed.add_field(
+        name="Closed on",
+        value=discord.utils.utcnow().strftime("%d %B %Y"),
+        inline=False
+    )
+
+    closed_message = await ctx.channel.send(embed=closed_embed)
+
+    queue[f"{mode}_closed_message_id"] = closed_message.id
+    save_queue(queue)
+
+    print(
+        f"Queue deleted | Gamemode: {mode} | "
+        f"Cleared: {len(entries)} players"
+    )
+
+
+async def restore_active_tier_test_views():
+    """Restore tier-test buttons after a bot restart."""
+    queue = load_queue()
+    restored = 0
+    registration_file = BASE_DIR / "registrations.txt"
+
+    for gamemode in QUEUE_CONFIG:
+        current_key = f"{gamemode}_currently_testing"
+        username = queue.get(current_key)
+        if not username:
+            continue
+
+        tester_id = get_active_tester(gamemode)
+        if not tester_id:
+            print(f"⚠️ {gamemode}: active tester not found for {username}")
+            continue
+
+        registration = None
+        if registration_file.exists():
+            with open(registration_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.rstrip("\n").split("|")
+                    if len(parts) >= 4 and clean_username(parts[1]) == clean_username(str(username)):
+                        registration = parts
+                        break
+
+        if not registration:
+            print(f"⚠️ {gamemode}: registration not found for {username}")
+            continue
+
+        player_entry = {
+            "user_id": registration[0],
+            "username": str(username),
+            "region": registration[2]
+        }
+
+        bot.add_view(TierResultView(
+            gamemode=gamemode,
+            tester_id=int(tester_id),
+            player_entry=player_entry
+        ))
+        restored += 1
+        print(f"♻️ Restored {gamemode} test buttons for {username}")
+
+    print(f"♻️ Restart recovery: restored {restored} active test(s).")
+
+
+
+# === BLADETIERS RANKED RUBRIC START ===
+
+RUBRIC_PANEL_FILE = BASE_DIR / "ranked_rubric_panel.json"
+RUBRIC_CHANNEL_NAME = "📖┃ranked-rubric"
+
+RUBRIC_DATA = {
+    "sword": """Evaluation Tier Test Information & Process:
+
+- Evaluation Tier Tests are the type of test that players who are either unranked or LT3 and below partake in. In order to tier test, you must first request an evaluation test via **Text📨┃request-test**. Doing this will add you to the waitlist channel where you will be pinged once a tester is available.
+- The regions we offer are NA, EU, AU, and AS. If you are from neither of these given regions, please pick the region in which you get the lowest ping. Please inform your tester if you are from neither of these regions so that we may assist you further.
+- Once a tester is available, you must join the waitlist and once you reach #1, a testing ticket will be opened with you and your tester.
+- Make sure to remain attentive to the queue if you are in it. If you do not respond to your tester within 5 minutes of your ticket being opened, your tester will skip you and you must re-join the queue in order to be tested.
+- You will fight your tester for 6 rounds.
+- Your tester will not base your tier solely on the score; they will also analyse how well you play when judging your tier.
+- The maximum tier you can receive from an evaluation tier test is LT3.
+- Once the fight is over, you will be given a tier by the tester and the ticket will close unless you have passed evaluation.
+- Minimum score for LT3: 4-6 against LT3 Tester / 2-6 against HT3 Tester (Tester can choose to give LT3 or not)
+- Score for LT3: 6-5 or better (Tester must give LT3)""",
+
+    "axe": """Evaluation Tier Test Information & Process:
+
+- Evaluation Tier Tests are the type of test that players who are either unranked or LT3 and below partake in. In order to tier test, you must first request an evaluation test via **Text📨┃request-test**. Doing this will add you to the waitlist channel where you will be pinged once a tester is available.
+- The regions we offer are NA, EU, AU, and AS. If you are from neither of these given regions, please pick the region in which you get the lowest ping. Please inform your tester if you are from neither of these regions so that we may assist you further.
+- Once a tester is available, you must join the waitlist and once you reach #1, a testing ticket will be opened with you and your tester.
+- Make sure to remain attentive to the queue if you are in it. If you do not respond to your tester within 5 minutes of your ticket being opened, your tester will skip you and you must re-join the queue in order to be tested.
+- You will fight your tester for 10 rounds.
+- Your tester will not base your tier solely on the score; they will also analyse how well you play when judging your tier.
+- The maximum tier you can receive from an evaluation tier test is LT3.
+- Once the fight is over, you will be given a tier by the tester and the ticket will close unless you have passed evaluation.
+- Minimum score for LT3: 8-10 against LT3 Tester / 4-10 against HT3 Tester (Tester can choose to give LT3 or not)
+- Score for LT3: 10-9 or better (Tester must give LT3)""",
+
+    "mace": """Evaluation Tier Test Information & Process:
+
+- Evaluation Tier Tests are the type of test that players who are either unranked or LT3 and below partake in. In order to tier test, you must first request an evaluation test via **Text📨┃request-test**. Doing this will add you to the waitlist channel where you will be pinged once a tester is available.
+- The regions we offer are NA, EU, AU, and AS. If you are from neither of these given regions, please pick the region in which you get the lowest ping. Please inform your tester if you are from neither of these regions so that we may assist you further.
+- Once a tester is available, you must join the waitlist and once you reach #1, a testing ticket will be opened with you and your tester.
+- Make sure to remain attentive to the queue if you are in it. If you do not respond to your tester within 5 minutes of your ticket being opened, your tester will skip you and you must re-join the queue in order to be tested.
+- You will fight your tester in a First to 3 (FT3) fight.
+- Your tester will not base your tier solely on the score; they will also analyse how well you play when judging your tier.
+- The maximum tier you can receive from an evaluation tier test is LT3.
+- Once the fight is over, you will be given a tier by the tester and the ticket will close unless you have passed evaluation.
+- Minimum score for LT3: 2-3 against LT3 Tester / 1-3 against HT3 Tester (Tester can choose to give LT3 or not)
+- Score for LT3: 3-2 or better (Tester must give LT3)""",
+
+    "uhc": """Evaluation Tier Test Information & Process:
+
+- Evaluation Tier Tests are for players who are unranked or LT3 and below.
+- To begin testing, request an evaluation test via **Text📨┃request-test**.
+- The regions we offer are NA, EU, AU, and AS. If you are from neither of these given regions, please pick the region in which you get the lowest ping and inform your tester.
+- Once a tester is available and you reach #1, a testing ticket will be opened with you and your tester.
+- Stay attentive to the queue. If you do not respond within 5 minutes after your ticket is opened, your tester may skip you and you must rejoin the queue.
+- The test is First to 6 (FT6).
+- Minimum score for LT3: 4-6 against LT3 Tester / 2-6 against HT3 Tester (Tester can choose to give LT3 or not)
+- Score for LT3: 6-5 or better (Tester must give LT3)""",
+
+    "nethop": """Evaluation Tier Test Information & Process:
+
+- Evaluation Tier Tests are the type of test that players who are either unranked or LT3 and below partake in. In order to tier test, you must first request an evaluation test via **Text📨┃request-test**. Doing this will add you to the waitlist channel where you will be pinged once a tester is available.
+- The regions we offer are NA, EU, AU, and AS. If you are from neither of these given regions, please pick the region in which you get the lowest ping. Please inform your tester if you are from neither of these regions so that we may assist you further.
+- Once a tester is available, you must join the waitlist and once you reach #1, a testing ticket will be opened with you and your tester.
+- Make sure to remain attentive to the queue if you are in it. If you do not respond to your tester within 5 minutes of your ticket being opened, your tester will skip you and you must re-join the queue in order to be tested.
+- You will fight your tester in a First to 3 (FT3) fight.
+- Your tester will not base your tier solely on the score; they will also analyse how well you play when judging your tier.
+- The maximum tier you can receive from an evaluation tier test is LT3.
+- Once the fight is over, you will be given a tier by the tester and the ticket will close unless you have passed evaluation.
+- Minimum score for LT3: 2-3 against LT3 Tester / 1-3 against HT3 Tester (Tester can choose to give LT3 or not)
+- Score for LT3: 3-2 or better (Tester must give LT3)""",
+
+    "pot": """Testing Process:
+
+- Once a tester is available, join the waitlist.
+- When you reach #1, a testing ticket will be opened with you and your tester.
+- Remain active in the queue. If you do not respond within 5 minutes after your ticket is opened, your tester may skip you and you must rejoin the queue.
+- You will fight your tester for 6 rounds.
+- Your tester will judge your tier based on your score and overall gameplay.
+- The maximum tier obtainable from an evaluation test is LT3.
+- After the fight, your tester will assign your tier and close the ticket unless you have passed evaluation.
+- Minimum score for LT3: 4-6 against LT3 Tester or 2-6 against HT3 (Tester can choose to give LT3 or not)
+- Score for LT3: 6-5 or better (Tester must give LT3)""",
+
+    "smp": """Evaluation Tier Test Information & Process:
+
+- Evaluation Tier Tests are for players who are unranked or LT3 and below.
+- To begin testing, request an evaluation test via **Text📨┃request-test**. Doing so will add you to the waitlist channel where you will be pinged once a tester is available.
+- Regions NA, EU, AU, AS; if outside choose lowest ping and inform tester.
+- Once tester is available and you reach #1, a testing ticket will be opened with you and your tester.
+- Stay attentive; 5-minute response window or tester skips and you rejoin.
+- You will fight your tester in a First to 3 (FT3) fight.
+- Your tester will judge score and overall gameplay.
+- Maximum tier is LT3.
+- After the fight, tier is assigned and the ticket closes unless you passed evaluation.
+- Minimum score for LT3: 2-3 vs LT3 / 1-3 vs HT3 (tester may choose LT3)
+- LT3 score: 3-2 or better (tester must give LT3)""",
+
+    "vanilla": """Evaluation Tests (LT3 and below):
+
+- Fights will be FT3.
+- Minimum score for LT3: 2-3 against LT3 Tester or 1-3 against HT3 Tester (Tester can choose to give LT3 or not)
+- Score for LT3: 3-2 or better (Tester must give LT3)"""
+}
+
+RUBRIC_BUTTONS = [
+    ("sword", "⚔️", "Sword", 0),
+    ("axe", "🪓", "Axe", 0),
+    ("mace", "🔨", "Mace", 0),
+    ("uhc", "🍎", "UHC", 0),
+    ("nethop", "🛡️", "Nethop", 1),
+    ("pot", "🧪", "Potion", 1),
+    ("smp", "🌐", "SMP", 1),
+    ("vanilla", "🌀", "Vanilla", 1),
+]
+
+RUBRIC_EMOJIS = {
+    "sword": "sword",
+    "axe": "axe",
+    "mace": "mace",
+    "uhc": "uhc",
+    "nethop": "nethop",
+    "pot": "pot",
+    "smp": "smp",
+    "vanilla": "vanilla",
+}
+
+class BladeTiersRubricView(discord.ui.View):
+    def __init__(self, guild=None):
+        super().__init__(timeout=None)
+
+        for mode, fallback, label, row in RUBRIC_BUTTONS:
+            button = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.secondary,
+                custom_id=f"bl_tiers_rubric_{mode}",
+                row=row,
+                emoji=fallback
+            )
+
+            if guild:
+                custom = discord.utils.get(
+                    guild.emojis,
+                    name=RUBRIC_EMOJIS.get(mode)
+                )
+                if custom:
+                    button.emoji = custom
+
+            async def callback(interaction, mode=mode):
+                text = RUBRIC_DATA.get(mode)
+                if not text:
+                    return await interaction.response.send_message(
+                        "❌ Rubric unavailable.",
+                        ephemeral=True
+                    )
+
+                embed = discord.Embed(
+                    title=f"📖 BladeTiers {label_for_mode(mode)} Ranked Rubric",
+                    description=text,
+                    color=discord.Color.blurple()
+                )
+                await interaction.response.send_message(
+                    embed=embed,
+                    ephemeral=True
+                )
+
+            button.callback = callback
+            self.add_item(button)
+
+def label_for_mode(mode):
+    return {
+        "sword": "Sword",
+        "axe": "Axe",
+        "mace": "Mace",
+        "uhc": "UHC",
+        "nethop": "Nethop",
+        "pot": "Potion",
+        "smp": "SMP",
+        "vanilla": "Vanilla",
+    }.get(mode, mode.title())
+
+async def send_bladetiers_rubric():
+    channel = discord.utils.get(
+        bot.get_all_channels(),
+        name=RUBRIC_CHANNEL_NAME
+    )
+
+    if channel is None:
+        print(f"⚠️ Ranked rubric channel not found: {RUBRIC_CHANNEL_NAME}")
+        return
+
+    old_id = None
+
+    try:
+        if RUBRIC_PANEL_FILE.exists():
+            import json
+            old_id = json.loads(
+                RUBRIC_PANEL_FILE.read_text()
+            ).get("message_id")
+    except Exception:
+        old_id = None
+
+    if old_id:
+        try:
+            old_message = await channel.fetch_message(int(old_id))
+            await old_message.delete()
+        except Exception:
+            pass
+
+    # Also remove any old rubric panel sent by this bot.
+    try:
+        async for message in channel.history(limit=100):
+            if (
+                message.author == bot.user
+                and message.embeds
+                and message.embeds[0].title == "📖 BLADETIERS RANKED RUBRIC"
+            ):
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+    except Exception as error:
+        print(f"⚠️ Rubric cleanup failed: {error}")
+
+    embed = discord.Embed(
+        title="📖 BLADETIERS RANKED RUBRIC",
+        description=(
+            "Select a gamemode below to view its ranked evaluation "
+            "rubric.\n\n"
+            "The rubric will only be visible to you when you click "
+            "a button."
+        ),
+        color=discord.Color.blurple()
+    )
+
+    view = BladeTiersRubricView(channel.guild)
+
+    message = await channel.send(
+        embed=embed,
+        view=view
+    )
+
+    try:
+        import json
+        RUBRIC_PANEL_FILE.write_text(
+            json.dumps({"message_id": message.id})
+        )
+    except Exception as error:
+        print(f"⚠️ Could not save rubric panel ID: {error}")
+
+    print(f"📖 Ranked rubric panel sent: {message.id}")
+
+# === BLADETIERS RANKED RUBRIC END ===
+
+
+
+# === BLADETIERS SUPPORT TICKETS START ===
+
+SUPPORT_PANEL_FILE = BASE_DIR / "support_ticket_panel.json"
+SUPPORT_PANEL_CHANNEL = "🤖┃support-ticket"
+SUPPORT_TICKET_CATEGORY = "Support Tickets"
+
+SUPPORT_TYPES = {
+    "general": ("General Support", "general"),
+    "player_report": ("Player Reporting", "report"),
+    "staff_report": ("Staff Reporting", "staff-report"),
+    "apply_staff": ("Applying for Staff", "apply-staff"),
+    "apply_tester": ("Applying for Tester", "apply-tester"),
+    "high_test": ("Apply for High Test", "high-test"),
+}
+
+class SupportCloseView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+        button=discord.ui.Button(
+            label="Close Ticket",
+            emoji="🔒",
+            style=discord.ButtonStyle.danger,
+            custom_id="bladetiers_support_close",
+            row=0
+        )
+
+        async def callback(interaction: discord.Interaction):
+            if interaction.guild is None:
+                return await interaction.response.send_message(
+                    "❌ This can only be used inside a server.",
+                    ephemeral=True
+                )
+
+            if not isinstance(interaction.channel, discord.TextChannel):
+                return await interaction.response.send_message(
+                    "❌ Invalid ticket channel.",
+                    ephemeral=True
+                )
+
+            topic=interaction.channel.topic or ""
+            allowed=False
+
+            if topic.startswith("support_ticket:"):
+                try:
+                    owner_id=int(topic.split(":")[1])
+                    allowed = (
+                        interaction.user.id == interaction.guild.owner_id
+                        or await bot.is_owner(interaction.user)
+                        or any(
+                            has_role(interaction.user, role)
+                            for role in (
+                                "Administrator",
+                                "Network Owner",
+                                "Regulator",
+                                "Senior Mod",
+                                "Discord Helper",
+                                "Developer/Admin",
+                            )
+                        )
+                    )
+                except Exception:
+                    pass
+
+            
+
+            if not allowed:
+                return await interaction.response.send_message(
+                    "❌ You cannot close this ticket.",
+                    ephemeral=True
+                )
+
+            await interaction.response.send_message(
+                "🗑️ **Ticket closing in 3 seconds...**",
+                ephemeral=False
+            )
+            await asyncio.sleep(3)
+
+            try:
+                await interaction.channel.delete(
+                    reason=f"Support ticket closed by {interaction.user}"
+                )
+            except Exception:
+                pass
+
+        button.callback=callback
+        self.add_item(button)
+
+
+class SupportTicketView(discord.ui.View):
+    def __init__(self, guild=None):
+        super().__init__(timeout=None)
+
+        buttons=[
+            ("general","General Support",":active_developer:",0,"active_developer"),
+            ("player_report","Player Reporting",":ban_hammar:",0,"ban_hammar"),
+            ("staff_report","Staff Reporting",":mod:",0,"mod"),
+            ("apply_staff","Applying for Staff",":staff:",1,"staff"),
+            ("apply_tester","Applying for Tester",":voluntary_tester:",1,"voluntary_tester"),
+            ("high_test","Apply for High Test",":ht1:",1,"ht1"),
+        ]
+
+        for key,label,emoji,row,emoji_name in buttons:
+            button=discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.secondary,
+                custom_id=f"bladetiers_support_{key}",
+                row=row
+            )
+
+            if guild:
+                custom_emoji=discord.utils.get(
+                    guild.emojis,
+                    name=emoji_name
+                )
+                if custom_emoji:
+                    button.emoji=custom_emoji
+
+
+            async def callback(
+                interaction: discord.Interaction,
+                ticket_type=key
+            ):
+                await create_support_ticket(
+                    interaction,
+                    ticket_type
+                )
+
+            button.callback=callback
+            self.add_item(button)
+
+
+async def create_support_ticket(
+    interaction: discord.Interaction,
+    ticket_type: str
+):
+    if interaction.guild is None:
+        return await interaction.response.send_message(
+            "❌ This can only be used inside a server.",
+            ephemeral=True
+        )
+
+    if ticket_type not in SUPPORT_TYPES:
+        return await interaction.response.send_message(
+            "❌ Invalid ticket type.",
+            ephemeral=True
+        )
+
+    label,prefix=SUPPORT_TYPES[ticket_type]
+
+    guild=interaction.guild
+    user=interaction.user
+
+    safe_username=clean_username(user.display_name).lower()
+    if not safe_username:
+        safe_username=f"user-{user.id}"
+
+    # Prevent duplicate open tickets of the same type.
+    category=discord.utils.get(
+        guild.categories,
+        name=SUPPORT_TICKET_CATEGORY
+    )
+
+    if category:
+        for channel in category.text_channels:
+            topic=channel.topic or ""
+            if topic == f"support_ticket:{user.id}:{ticket_type}":
+                return await interaction.response.send_message(
+                    f"❌ You already have an open **{label}** ticket: {channel.mention}",
+                    ephemeral=True
+                )
+
+    if category is None:
+        try:
+            category=await guild.create_category(
+                SUPPORT_TICKET_CATEGORY,
+                reason="BladeTiers support ticket category"
+            )
+        except discord.Forbidden:
+            return await interaction.response.send_message(
+                "❌ I don't have permission to create the support ticket category.",
+                ephemeral=True
+            )
+
+    # Private permissions: support team can access tickets.
+    overwrites={
+        guild.default_role: discord.PermissionOverwrite(
+            view_channel=False
+        ),
+        user: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+            attach_files=True,
+            embed_links=True
+        ),
+        guild.me: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+            manage_channels=True,
+            manage_messages=True
+        )
+    }
+
+    helper_role = discord.utils.get(guild.roles, name="Discord Helper")
+    if helper_role:
+        overwrites[helper_role] = discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+            attach_files=True,
+            embed_links=True
+        )
+
+    ticket_name=f"{prefix}-{safe_username}"
+
+    # Discord channel names have a 100 character limit.
+    ticket_name=ticket_name[:100]
+
+    try:
+        channel=await guild.create_text_channel(
+            name=ticket_name,
+            category=category,
+            overwrites=overwrites,
+            topic=f"support_ticket:{user.id}:{ticket_type}",
+            reason=f"BladeTiers {label} ticket"
+        )
+    except discord.Forbidden:
+        return await interaction.response.send_message(
+            "❌ I don't have permission to create the ticket.",
+            ephemeral=True
+        )
+    except discord.HTTPException as error:
+        return await interaction.response.send_message(
+            f"❌ Failed to create ticket: `{error}`",
+            ephemeral=True
+        )
+
+    embed=discord.Embed(
+        title=f"🎫 {label}",
+        description=(
+            f"Welcome {user.mention}!\n\n"
+            f"Your **{label}** ticket has been created.\n"
+            "Please explain your issue/application clearly and "
+            "wait for a member of the team to respond.\n\n"
+            "🔒 Use the button below to close this ticket."
+        ),
+        color=discord.Color.blurple()
+    )
+
+    embed.set_footer(
+        text="BladeTiers Support"
+    )
+
+    # Ping the ticket owner + Senior Tester + Developer/Admin.
+    senior_tester_role = discord.utils.get(
+        guild.roles,
+        name="Senior Tester"
+    )
+
+    developer_admin_role = discord.utils.get(
+        guild.roles,
+        name="Developer/Admin"
+    )
+
+    mentions = [user.mention]
+
+    helper_role = discord.utils.get(guild.roles, name="Discord Helper")
+    if helper_role:
+        mentions.append(helper_role.mention)
+
+    if senior_tester_role:
+        mentions.append(senior_tester_role.mention)
+
+    if developer_admin_role:
+        mentions.append(developer_admin_role.mention)
+
+    await channel.send(
+        content=" ".join(mentions),
+        embed=embed,
+        view=SupportCloseView(),
+        allowed_mentions=discord.AllowedMentions(
+            users=True,
+            roles=True
+        )
+    )
+
+    await interaction.response.send_message(
+        f"✅ Your private ticket has been created: {channel.mention}",
+        ephemeral=True
+    )
+
+    print(
+        f"🎫 Support ticket created | "
+        f"Type: {label} | User: {user} | Channel: {channel.name}"
+    )
+
+
+async def refresh_support_ticket_panel():
+    channel=discord.utils.get(
+        bot.get_all_channels(),
+        name=SUPPORT_PANEL_CHANNEL
+    )
+
+    if channel is None:
+        print(
+            f"⚠️ Support panel channel not found: "
+            f"{SUPPORT_PANEL_CHANNEL}"
+        )
+        return
+
+    # Delete the previously tracked panel.
+    old_id=None
+
+    try:
+        if SUPPORT_PANEL_FILE.exists():
+            old_id=json.loads(
+                SUPPORT_PANEL_FILE.read_text(
+                    encoding="utf-8"
+                )
+            ).get("message_id")
+    except Exception:
+        old_id=None
+
+    if old_id:
+        try:
+            old_message=await channel.fetch_message(
+                int(old_id)
+            )
+            await old_message.delete()
+        except Exception:
+            pass
+
+    # Clean up any older BladeTiers support panels too.
+    try:
+        async for message in channel.history(limit=100):
+            if (
+                message.author == bot.user
+                and message.embeds
+                and message.embeds[0].title == "🎫 Support Portal"
+            ):
+                try:
+                    await message.delete()
+                except Exception:
+                    pass
+    except Exception as error:
+        print(
+            f"⚠️ Support panel cleanup failed: {error}"
+        )
+
+    embed=discord.Embed(
+        title="🎫 Support Portal",
+        description=(
+            "You can create a ticket for the following:\n\n"
+            "**1) General Support**\n"
+            "**2) Player Reporting**\n"
+            "**3) Staff Reporting**\n"
+            "**4) Applying for Staff**\n"
+            "**5) Applying for Tester**\n"
+            "**6) Applying for High Test**\n\n"
+            "Please select the corresponding button category below "
+            "to begin."
+        ),
+        color=discord.Color.green()
+    )
+
+    message=await channel.send(
+        embed=embed,
+        view=SupportTicketView(channel.guild)
+    )
+
+    try:
+        SUPPORT_PANEL_FILE.write_text(
+            json.dumps(
+                {"message_id": message.id},
+                indent=2
+            ),
+            encoding="utf-8"
+        )
+    except Exception as error:
+        print(
+            f"⚠️ Could not save support panel ID: {error}"
+        )
+
+    print(
+        f"🎫 Support panel refreshed: {message.id}"
+    )
+
+
+# === BLADETIERS SUPPORT TICKETS END ===
+
+
+# === TESTER APPLICATION SYSTEM ===
+
+TESTER_APPLICATION_QUESTIONS = [
+    "Why do you want to become a BladeTiers tester?",
+    "What Minecraft PvP experience do you have?",
+    "Which gamemodes are you strongest at?",
+    "What are your current or previous tiers?",
+    "How would you handle a player disagreeing with their result?",
+    "What would you do if you suspected a player was cheating?",
+    "What would you do if a player stopped responding during a test?",
+    "How active and available can you be for testing?",
+    "How would you avoid favoritism or personal bias while testing?",
+    "Why should BladeTiers choose you as a tester?",
+]
+
+ACTIVE_TESTER_APPLICATIONS = {}
+
+
+class TesterAnswerModal(discord.ui.Modal):
+    def __init__(self, application_view):
+        self.application_view = application_view
+        number = application_view.question_index + 1
+
+        super().__init__(title=f"Tester Application - Q{number}/10")
+
+        self.answer = discord.ui.TextInput(
+            label=f"Question {number}",
+            placeholder="Write your answer here...",
+            style=discord.TextStyle.paragraph,
+            required=True,
+            min_length=1,
+            max_length=4000,
+        )
+
+        self.add_item(self.answer)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        view = self.application_view
+
+        if interaction.user.id != view.applicant.id:
+            await interaction.response.send_message(
+                "This application is not yours.",
+                ephemeral=True,
+            )
+            return
+
+        answer = str(self.answer.value).strip()
+
+        if not answer:
+            await interaction.response.send_message(
+                "Please enter an answer.",
+                ephemeral=True,
+            )
+            return
+
+        view.answers.append(answer)
+        view.question_index += 1
+
+        if view.question_index >= len(TESTER_APPLICATION_QUESTIONS):
+            await interaction.response.defer()
+
+            log_channel = discord.utils.get(
+                interaction.guild.text_channels,
+                name="apply-logs",
+            )
+
+            if log_channel is not None:
+                embed = discord.Embed(
+                    title="Tester Application",
+                    description=(
+                        f"Applicant: {view.applicant.mention}\n"
+                        f"Started by: {view.started_by.mention}"
+                    ),
+                    color=discord.Color.blurple(),
+                    timestamp=discord.utils.utcnow(),
+                )
+
+                for i, question in enumerate(
+                    TESTER_APPLICATION_QUESTIONS,
+                    start=1,
+                ):
+                    answer_text = view.answers[i - 1]
+
+                    if len(answer_text) > 1024:
+                        answer_text = answer_text[:1021] + "..."
+
+                    embed.add_field(
+                        name=f"Q{i}. {question}",
+                        value=answer_text,
+                        inline=False,
+                    )
+
+                embed.set_footer(
+                    text=f"Applicant ID: {view.applicant.id}"
+                )
+
+                await log_channel.send(embed=embed)
+
+            await view.message.edit(
+                content=(
+                    "Tester application completed.\n"
+                    "Your answers have been sent to the staff team."
+                ),
+                embed=None,
+                view=None,
+            )
+
+            ACTIVE_TESTER_APPLICATIONS.pop(
+                view.applicant.id,
+                None,
+            )
+            return
+
+        await interaction.response.defer()
+
+        await view.message.edit(
+            embed=view.build_embed(),
+            view=view,
+        )
+
+
+class TesterApplicationView(discord.ui.View):
+    def __init__(self, applicant, started_by):
+        super().__init__(timeout=1800)
+
+        self.applicant = applicant
+        self.started_by = started_by
+        self.question_index = 0
+        self.answers = []
+        self.message = None
+
+    def build_embed(self):
+        question = TESTER_APPLICATION_QUESTIONS[
+            self.question_index
+        ]
+
+        return discord.Embed(
+            title="BladeTiers Tester Application",
+            description=(
+                f"Applicant: {self.applicant.mention}\n\n"
+                f"Question {self.question_index + 1}/10\n"
+                f"{question}\n\n"
+                "Click **Answer Question** to answer."
+            ),
+            color=discord.Color.blurple(),
+        )
+
+    @discord.ui.button(
+        label="Answer Question",
+        style=discord.ButtonStyle.primary,
+        emoji="✍️",
+    )
+    async def answer_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ):
+        if interaction.user.id != self.applicant.id:
+            await interaction.response.send_message(
+                "Only the applicant can answer these questions.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_modal(
+            TesterAnswerModal(self)
+        )
+
+    @discord.ui.button(
+        label="Cancel",
+        style=discord.ButtonStyle.danger,
+        emoji="🛑",
+    )
+    async def cancel_button(
+        self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ):
+        if interaction.user.id != self.applicant.id:
+            await interaction.response.send_message(
+                "Only the applicant can cancel this application.",
+                ephemeral=True,
+            )
+            return
+
+        ACTIVE_TESTER_APPLICATIONS.pop(
+            self.applicant.id,
+            None,
+        )
+
+        await interaction.response.edit_message(
+            content="Tester application cancelled.",
+            embed=None,
+            view=None,
+        )
+
+
+
+@bot.tree.command(
+    name="add",
+    description="Add a user to a tier-test ticket.",
+    guild=discord.Object(id=int(GUILD_ID))
+)
+@app_commands.describe(user="The Discord user to add to this ticket.")
+async def add(interaction: discord.Interaction, user: discord.Member):
+    if interaction.guild is None or interaction.channel is None:
+        await interaction.response.send_message(
+            "This command must be used inside a server ticket.",
+            ephemeral=True
+        )
+        return
+
+    member = interaction.user
+    tester_role = discord.utils.get(
+        interaction.guild.roles,
+        name="TESTER TEAM"
+    )
+
+    if tester_role is None or tester_role not in member.roles:
+        await interaction.response.send_message(
+            "You need the TESTER TEAM role to use this command.",
+            ephemeral=True
+        )
+        return
+
+    channel = interaction.channel
+    category = getattr(channel, "category", None)
+
+    if (
+        not isinstance(channel, discord.TextChannel)
+        or category is None
+        or category.name != TEST_TICKET_CATEGORY_NAME
+        or not channel.name.endswith(tuple(
+            f"-test-{suffix}" for suffix in []
+        ))
+    ):
+        # Also accept tier-test tickets identified by their channel name.
+        if (
+            not isinstance(channel, discord.TextChannel)
+            or category is None
+            or category.name != TEST_TICKET_CATEGORY_NAME
+            or "-test-" not in channel.name
+        ):
+            await interaction.response.send_message(
+                "Use this command inside a tier-test ticket.",
+                ephemeral=True
+            )
+            return
+
+    try:
+        await channel.set_permissions(
+            user,
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+            attach_files=True,
+            embed_links=True,
+            reason=f"Added to tier-test ticket by {member}"
+        )
+
+        await interaction.response.send_message(
+            f"Added {user.mention} to this tier-test ticket.",
+            allowed_mentions=discord.AllowedMentions(users=True)
+        )
+
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            "I don't have permission to update this ticket's permissions.",
+            ephemeral=True
+        )
+    except discord.HTTPException:
+        await interaction.response.send_message(
+            "Discord rejected the permission change. Please try again.",
+            ephemeral=True
+        )
+
+@bot.tree.command(
+    name="lookup",
+    description="Look up a player's Minecraft IGN and Discord account.",
+    guild=discord.Object(id=int(GUILD_ID))
+)
+@app_commands.describe(
+    ign="The Minecraft IGN to look up."
+)
+async def lookup(
+    interaction: discord.Interaction,
+    ign: str
+):
+    target_ign = ign.strip().lower()
+
+    if not target_ign:
+        await interaction.response.send_message(
+            "❌ Please provide a Minecraft IGN.",
+            ephemeral=True
+        )
+        return
+
+    registration_file = BASE_DIR / "registrations.txt"
+
+    if not registration_file.exists():
+        await interaction.response.send_message(
+            "❌ No registration data is available.",
+            ephemeral=True
+        )
+        return
+
+    found = None
+
+    try:
+        with open(
+            registration_file,
+            "r",
+            encoding="utf-8"
+        ) as f:
+            for line in f:
+                parts = line.rstrip("\n").split("|")
+
+                if len(parts) < 2:
+                    continue
+
+                discord_id = parts[0].strip()
+                username = parts[1].strip()
+
+                if username.lower() == target_ign:
+                    region = parts[2].strip() if len(parts) >= 3 else "Unknown"
+                    account_type = (
+                        parts[3].strip().title()
+                        if len(parts) >= 4
+                        else "Cracked"
+                    )
+
+                    found = (
+                        discord_id,
+                        username,
+                        region,
+                        account_type
+                    )
+                    break
+
+    except OSError:
+        await interaction.response.send_message(
+            "❌ Could not read registration data.",
+            ephemeral=True
+        )
+        return
+
+    if found is None:
+        await interaction.response.send_message(
+            f"❌ No registered player found with the IGN `{ign}`.",
+            ephemeral=True
+        )
+        return
+
+    discord_id, username, region, account_type = found
+
+    try:
+        discord_user = await bot.fetch_user(int(discord_id))
+        discord_display = discord_user.mention
+    except (
+        discord.NotFound,
+        discord.HTTPException,
+        ValueError,
+        TypeError
+    ):
+        discord_display = f"<@{discord_id}>"
+
+    embed = discord.Embed(
+        title="🔎 Player Lookup",
+        description=f"Information for **{username}**",
+        color=discord.Color.blurple()
+    )
+
+    embed.add_field(
+        name="🎮 Minecraft IGN",
+        value=f"`{username}`",
+        inline=True
+    )
+
+    embed.add_field(
+        name="💬 Discord",
+        value=discord_display,
+        inline=True
+    )
+
+    embed.add_field(
+        name="🌎 Region",
+        value=f"`{region}`",
+        inline=True
+    )
+
+    embed.add_field(
+        name="👤 Account Type",
+        value=f"`{account_type}`",
+        inline=True
+    )
+
+    embed.set_footer(
+        text="BladeTiers Player Lookup"
+    )
+
+    await interaction.response.send_message(
+        embed=embed,
+        ephemeral=False
+    )
+
+
+@bot.tree.command(
+    name="applytest",
+    description="Start a tester application for a member.",
+)
+@app_commands.describe(
+    member="The member who should complete the tester application.",
+)
+async def applytest(
+    interaction: discord.Interaction,
+    member: discord.Member,
+):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "Administrator only.",
+            ephemeral=True,
+        )
+        return
+
+    if member.bot:
+        await interaction.response.send_message(
+            "You cannot start an application for a bot.",
+            ephemeral=True,
+        )
+        return
+
+    if member.id in ACTIVE_TESTER_APPLICATIONS:
+        await interaction.response.send_message(
+            f"{member.mention} already has an active tester application.",
+            ephemeral=True,
+        )
+        return
+
+    view = TesterApplicationView(
+        applicant=member,
+        started_by=interaction.user,
+    )
+
+    await interaction.response.send_message(
+        content=member.mention,
+        embed=view.build_embed(),
+        view=view,
+    )
+
+    view.message = await interaction.original_response()
+
+    ACTIVE_TESTER_APPLICATIONS[member.id] = view
+
+
+# === TESTER APPLICATION SYSTEM END ===
+
+
+# STAFF APPLICATION SYSTEM
+# ============================================================
+
+STAFF_APPLICATION_QUESTIONS = ['Why do you want to become a BladeTiers staff member?', 'What experience do you have with moderation or managing Discord communities?', 'How active can you be on the server, and what is your usual availability?', 'How would you handle an argument between two members without taking sides?', 'What would you do if a friend of yours broke the server rules?', 'A member is repeatedly breaking rules after being warned. What would you do?', 'How would you handle a player who is angry or disrespectful after receiving a tier result?', 'What would you do if another staff member was abusing their permissions?', 'How would you respond if you made a moderation mistake?', 'Why should BladeTiers choose you over other applicants?']
+ACTIVE_STAFF_APPLICATIONS = {}
+
+def staff_embed(app):
+    q=STAFF_APPLICATION_QUESTIONS[app["index"]]
+    return discord.Embed(
+        title="BladeTiers Staff Application",
+        description=(
+            f'**Applicant:** <@{app["user_id"]}>\n\n'
+            f'**Question {app["index"]+1}/10**\n'
+            f'{q}\n\n'
+            'Click **Answer Question** to answer.'
+        ),
+        color=discord.Color.gold()
+    )
+
+class StaffAnswerModal(discord.ui.Modal):
+    def __init__(self,mid):
+        super().__init__(title="Answer Question")
+        self.mid=mid
+        self.answer=discord.ui.TextInput(
+            label="Answer Question",
+            placeholder="Type your answer here...",
+            style=discord.TextStyle.paragraph,
+            required=True,
+            max_length=1000
+        )
+        self.add_item(self.answer)
+
+    async def on_submit(self,interaction):
+        app=ACTIVE_STAFF_APPLICATIONS.get(self.mid)
+        if not app:
+            return await interaction.response.send_message("❌ Application is no longer active.",ephemeral=True)
+        if interaction.user.id != app["user_id"]:
+            return await interaction.response.send_message("❌ Only the applicant can answer.",ephemeral=True)
+
+        app["answers"].append(self.answer.value.strip())
+        app["index"]+=1
+
+        if app["index"]<10:
+            return await interaction.response.edit_message(
+                embed=staff_embed(app),
+                view=StaffApplicationView(self.mid)
+            )
+
+        ch=discord.utils.get(interaction.guild.text_channels,name="apply-logs")
+        if ch is None:
+            return await interaction.response.send_message("❌ #apply-logs was not found.",ephemeral=True)
+
+        e=discord.Embed(
+            title="📋 New Staff Application",
+            description=f"**Applicant:** {interaction.user.mention}\n**Username:** `{interaction.user}`\n**User ID:** `{interaction.user.id}`",
+            color=discord.Color.gold()
+        )
+        e.set_thumbnail(url=interaction.user.display_avatar.url)
+
+        for i,(q,ans) in enumerate(zip(STAFF_APPLICATION_QUESTIONS,app["answers"]),1):
+            e.add_field(name=f"Q{i}. {q}",value=(ans or "*No answer provided.*")[:1024],inline=False)
+
+        e.set_footer(text="BladeTiers Staff Applications")
+        await ch.send(embed=e)
+        ACTIVE_STAFF_APPLICATIONS.pop(self.mid,None)
+
+        await interaction.response.edit_message(
+            content="✅ **Staff application submitted!**\n\nYour answers have been sent to the BladeTiers staff team.",
+            embed=None,
+            view=None
+        )
+
+class StaffApplicationView(discord.ui.View):
+    def __init__(self,mid):
+        super().__init__(timeout=1800)
+        self.mid=mid
+
+    @discord.ui.button(label="Answer Question",style=discord.ButtonStyle.primary,emoji="✍️")
+    async def answer(self,interaction,button):
+        app=ACTIVE_STAFF_APPLICATIONS.get(self.mid)
+        if not app:
+            return await interaction.response.send_message("❌ Application is no longer active.",ephemeral=True)
+        if interaction.user.id != app["user_id"]:
+            return await interaction.response.send_message("❌ Only the applicant can answer.",ephemeral=True)
+        await interaction.response.send_modal(StaffAnswerModal(self.mid))
+
+    @discord.ui.button(label="Cancel",style=discord.ButtonStyle.danger,emoji="🛑")
+    async def cancel(self,interaction,button):
+        app=ACTIVE_STAFF_APPLICATIONS.get(self.mid)
+        if not app:
+            return await interaction.response.send_message("❌ Application is no longer active.",ephemeral=True)
+        if interaction.user.id != app["user_id"]:
+            return await interaction.response.send_message("❌ Only the applicant can cancel.",ephemeral=True)
+        ACTIVE_STAFF_APPLICATIONS.pop(self.mid,None)
+        await interaction.response.edit_message(content="Staff application cancelled.",embed=None,view=None)
+
+@bot.tree.command(name="applystaff",description="Start a staff application for a member.",guild=discord.Object(id=int(GUILD_ID)))
+@app_commands.describe(user="The member who should complete the staff application.")
+async def applystaff(interaction,user:discord.Member):
+    if not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message("❌ **Administrator only.**",ephemeral=True)
+    if user.bot:
+        return await interaction.response.send_message("❌ You cannot create a staff application for a bot.",ephemeral=True)
+    if any(x["user_id"]==user.id for x in ACTIVE_STAFF_APPLICATIONS.values()):
+        return await interaction.response.send_message(f"❌ {user.mention} already has an active staff application.",ephemeral=True)
+
+    app={"user_id":user.id,"index":0,"answers":[]}
+    await interaction.response.send_message(
+        content=user.mention,
+        embed=staff_embed(app),
+        allowed_mentions=discord.AllowedMentions(users=True)
+    )
+    msg=await interaction.original_response()
+    ACTIVE_STAFF_APPLICATIONS[msg.id]=app
+    await msg.edit(embed=staff_embed(app),view=StaffApplicationView(msg.id))
+
+    print(f"📋 Staff application started | Applicant: {user} ({user.id}) | Started by: {interaction.user}")
+
+
+
+
+# ============================================================
+# HOURLY BLADE TIERS ROLE SYNC
+# ============================================================
+
+TIER_ROLE_GAMEMODES = {
+    "vanilla": "Vanilla",
+    "uhc": "UHC",
+    "pot": "Pot",
+    "nethop": "NethOP",
+    "nethpot": "NethOP",
+    "smp": "SMP",
+    "sword": "Sword",
+    "axe": "Axe",
+    "mace": "Mace",
+}
+
+TIER_ROLE_TIERS = {
+    "LT5", "HT5",
+    "LT4", "HT4",
+    "LT3", "HT3",
+    "LT2", "HT2",
+    "LT1", "HT1",
+}
+
+
+async def sync_all_tier_roles():
+    print("🔄 Starting hourly Blade Tiers role sync...")
+
+    try:
+        guild = bot.get_guild(int(GUILD_ID))
+
+        if guild is None:
+            guild = await bot.fetch_guild(int(GUILD_ID))
+
+        # Fetch the current role list once.
+        roles = await guild.fetch_roles()
+
+        tier_roles = {
+            role.id: role
+            for role in roles
+            if role.name.rsplit(" ", 1)[-1] in TIER_ROLE_TIERS
+            and role.name.split(" ", 1)[0] in {
+                "Vanilla", "UHC", "Pot", "NethOP",
+                "SMP", "Sword", "Axe", "Mace"
+            }
+        }
+
+        if len(tier_roles) != 80:
+            print(
+                f"⚠️ Hourly tier sync aborted: "
+                f"found {len(tier_roles)}/80 tier roles."
+            )
+            return
+
+        # Read registrations.
+        registration_file = BASE_DIR / "registrations.txt"
+
+        if not registration_file.exists():
+            print("⚠️ Hourly tier sync skipped: registrations.txt missing.")
+            return
+
+        registrations = {}
+
+        for line in registration_file.read_text(
+            encoding="utf-8"
+        ).splitlines():
+
+            parts = line.strip().split("|")
+
+            if len(parts) < 4:
+                continue
+
+            try:
+                discord_id = int(parts[0])
+            except ValueError:
+                continue
+
+            registrations[discord_id] = parts[1]
+
+        # Read tiers.json once.
+        if not TIERS_FILE.exists():
+            print("⚠️ Hourly tier sync skipped: tiers.json missing.")
+            return
+
+        with open(TIERS_FILE, "r", encoding="utf-8") as f:
+            tiers_data = json.load(f)
+
+        tiers_lookup = {
+            str(ign).lower(): data
+            for ign, data in tiers_data.items()
+        }
+
+        checked = 0
+        changed = 0
+        skipped = 0
+        errors = 0
+
+        for discord_id, registered_ign in registrations.items():
+
+            try:
+                # Use cache first to avoid unnecessary HTTP requests.
+                member = guild.get_member(discord_id)
+
+                if member is None:
+                    try:
+                        member = await guild.fetch_member(discord_id)
+                    except discord.NotFound:
+                        skipped += 1
+                        continue
+
+                checked += 1
+
+                tier_entry = tiers_lookup.get(
+                    registered_ign.lower()
+                )
+
+                if not isinstance(tier_entry, dict):
+                    skipped += 1
+                    continue
+
+                # Build the roles the player SHOULD have.
+                desired_roles = set()
+
+                for gamemode, tier in tier_entry.items():
+
+                    display_gamemode = TIER_ROLE_GAMEMODES.get(
+                        str(gamemode).lower()
+                    )
+
+                    if not display_gamemode:
+                        continue
+
+                    tier = str(tier).upper()
+
+                    if tier not in TIER_ROLE_TIERS:
+                        # No Discord role exists for MT/etc.,
+                        # so don't touch anything for this entry.
+                        continue
+
+                    role_name = f"{display_gamemode} {tier}"
+
+                    role = next(
+                        (
+                            r for r in tier_roles.values()
+                            if r.name == role_name
+                        ),
+                        None
+                    )
+
+                    if role:
+                        desired_roles.add(role)
+
+                # Current Blade Tier roles only.
+                current_roles = {
+                    role
+                    for role in member.roles
+                    if role.id in tier_roles
+                }
+
+                roles_to_remove = current_roles - desired_roles
+                roles_to_add = desired_roles - current_roles
+
+                # Nothing changed -> do absolutely nothing.
+                if not roles_to_remove and not roles_to_add:
+                    continue
+
+                print(
+                    f"🔄 Syncing {registered_ign} "
+                    f"({member.id})"
+                )
+
+                # IMPORTANT:
+                # Remove old tier roles FIRST.
+                if roles_to_remove:
+                    await member.remove_roles(
+                        *roles_to_remove,
+                        reason="Hourly Blade Tiers role sync"
+                    )
+
+                    print(
+                        "   Removed: " +
+                        ", ".join(
+                            sorted(r.name for r in roles_to_remove)
+                        )
+                    )
+
+                # Then add the new tier roles.
+                if roles_to_add:
+                    await member.add_roles(
+                        *roles_to_add,
+                        reason="Hourly Blade Tiers role sync"
+                    )
+
+                    print(
+                        "   Added: " +
+                        ", ".join(
+                            sorted(r.name for r in roles_to_add)
+                        )
+                    )
+
+                changed += 1
+
+                # Tiny delay only after an actual modification.
+                await asyncio.sleep(0.15)
+
+            except discord.Forbidden:
+                errors += 1
+                print(
+                    f"⚠️ Permission error syncing "
+                    f"{registered_ign} ({discord_id})"
+                )
+
+            except discord.HTTPException as e:
+                errors += 1
+                print(
+                    f"⚠️ Discord HTTP error syncing "
+                    f"{registered_ign} ({discord_id}): {e}"
+                )
+
+            except Exception as e:
+                errors += 1
+                print(
+                    f"⚠️ Unexpected error syncing "
+                    f"{registered_ign} ({discord_id}): {e}"
+                )
+
+        print(
+            f"✅ Hourly tier sync complete | "
+            f"Checked: {checked} | "
+            f"Changed: {changed} | "
+            f"Skipped: {skipped} | "
+            f"Errors: {errors}"
+        )
+
+    except Exception as e:
+        # NEVER let the background task kill the bot.
+        print(f"🚨 Hourly tier sync failed safely: {e}")
+
+
+@tasks.loop(hours=1)
+async def hourly_tier_role_sync():
+    await sync_all_tier_roles()
+
+
+@hourly_tier_role_sync.before_loop
+async def before_hourly_tier_role_sync():
+    await bot.wait_until_ready()
+
+    # First check happens one hour after startup.
+    await asyncio.sleep(3600)
+
+
+
+# ============================================================
+GUIDE_COOLDOWN_SECONDS = 300
+guide_last_sent = 0.0
+
+GUIDE_MESSAGE = """# Guide
+
+https://youtu.be/XkLkE_wnDXA"""
+
+@bot.event
+async def on_message(message):
+    global guide_last_sent
+
+    if message.author.bot:
+        return
+
+    if message.content.strip().lower() == "guide":
+        now = time.monotonic()
+
+        if now - guide_last_sent >= GUIDE_COOLDOWN_SECONDS:
+            guide_last_sent = now
+            try:
+                await message.channel.send(GUIDE_MESSAGE)
+            except discord.HTTPException as e:
+                print(f"⚠️ Failed to send guide message: {e}")
+
+    await bot.process_commands(message)
+
+
+@bot.event
+async def on_ready():
+    if not hourly_tier_role_sync.is_running():
+        hourly_tier_role_sync.start()
+        print("⏱️ Hourly Blade Tiers role sync started.")
+
+    if not getattr(bot, "_support_views_registered", False):
+        bot.add_view(SupportTicketView())
+        bot.add_view(SupportCloseView())
+        bot._support_views_registered = True
+
+    if not getattr(bot, "_support_panel_refreshed", False):
+        await refresh_support_ticket_panel()
+        bot._support_panel_refreshed = True
+
+    if not getattr(bot, "_rubric_view_registered", False):
+        bot.add_view(BladeTiersRubricView())
+        bot._rubric_view_registered = True
+
+    if not getattr(bot, "_rubric_refreshed", False):
+        await send_bladetiers_rubric()
+        bot._rubric_refreshed = True
+
+    await restore_active_tier_test_views()
+    await bot.change_presence(activity=discord.Game(name="dsc.gg/bladetiers"))
+    print(
+        f"Logged in as {bot.user}"
+    )
+
+    guild = discord.Object(
+        id=int(GUILD_ID)
+    )
+
+    try:
+        if PANEL_FILE.exists():
+            with open(
+                PANEL_FILE,
+                "r",
+                encoding="utf-8"
+            ) as f:
+                panel = json.load(f)
+
+            channel = bot.get_channel(
+                int(panel["channel_id"])
+            )
+
+            if channel is None:
+                channel = await bot.fetch_channel(
+                    int(panel["channel_id"])
+                )
+
+            try:
+                old_message = await channel.fetch_message(
+                    int(panel["message_id"])
+                )
+                await old_message.delete()
+            except (
+                discord.NotFound,
+                discord.Forbidden
+            ):
+                pass
+
+            embed = discord.Embed(
+                title=f"{panel_emoji(bot.get_guild(int(GUILD_ID)), 'ht1')} BladeTiers Tier Testing",
+                description=(
+                    "Welcome to **BladeTiers**!\n\n"
+                    "Register your Minecraft profile and request a tier test. "
+                    "Use the buttons below to continue.\n\n"
+                    f"{panel_emoji(bot.get_guild(int(GUILD_ID)), 'ban_hammar')} **Minecraft username is case-sensitive.**"
+                ),
+                color=discord.Color.from_rgb(57, 255, 20)
+            )
+
+            embed.add_field(
+                name=f"{panel_emoji(bot.get_guild(int(GUILD_ID)), 'promote')} Register / Update",
+                value="Choose Premium or Cracked, then enter your Minecraft username and region.",
+                inline=False
+            )
+
+            embed.add_field(
+                name=f"{panel_emoji(bot.get_guild(int(GUILD_ID)), 'promote')} Upload / Change Skin",
+                value="Cracked users can upload or replace their Minecraft skin.",
+                inline=False
+            )
+
+            embed.add_field(
+                name=f"{panel_emoji(bot.get_guild(int(GUILD_ID)), 'ace')} Request Test",
+                value="Request a tier test after registering your profile.",
+                inline=False
+            )
+
+            new_message = await channel.send(
+                embed=embed,
+                view=RegisterPanelView()
+            )
+
+            with open(
+                PANEL_FILE,
+                "w",
+                encoding="utf-8"
+            ) as f:
+                json.dump(
+                    {
+                        "channel_id": channel.id,
+                        "message_id": new_message.id
+                    },
+                    f,
+                    indent=2
+                )
+
+    except Exception as error:
+        print(
+            f"Auto /reghere refresh failed: {error}"
+        )
+
+    try:
+        guild_synced = await bot.tree.sync(guild=guild); global_synced = await bot.tree.sync(); print(f"Synced {len(guild_synced)} guild + {len(global_synced)} global command(s).")
+        print(
+            f"Synced {len(guild_synced)} command(s) to test server."
+        )
+
+    except Exception as error:
+        print(
+            f"Command sync error: {error}"
+        )
+
+
+
+
+@app_commands.choices(mode=[
+    app_commands.Choice(name="on", value="on"),
+    app_commands.Choice(name="off", value="off"),
+])
+@bot.tree.command(
+    name="blackout",
+    description="Temporarily disable or restore bot commands.",
+    guild=discord.Object(id=int(GUILD_ID))
+)
+@app_commands.describe(mode="Turn blackout on or off.")
+async def blackout(interaction: discord.Interaction, mode: app_commands.Choice[str]):
+    global BLACKOUT_ENABLED
+
+    if interaction.user.id != BLACKOUT_OWNER_ID:
+        return await interaction.response.send_message(
+            "You are not authorized to use this command.",
+            ephemeral=True
+        )
+
+    BLACKOUT_ENABLED = mode.value == "on"
+
+    BLACKOUT_FILE.write_text(json.dumps(
+        {"enabled": BLACKOUT_ENABLED},
+        indent=2
+    ))
+
+    if BLACKOUT_ENABLED:
+        message = "🚨 **Server Under Blackout** — other bot commands are temporarily disabled."
+    else:
+        message = "✅ **Blackout disabled.** Bot commands are available again."
+
+    await interaction.response.send_message(message, ephemeral=True)
+
+
+bot.run(TOKEN)

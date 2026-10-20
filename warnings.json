@@ -1,0 +1,77 @@
+{
+  "1496042391248048172": {
+    "count": 1,
+    "history": [
+      {
+        "reason": "he ate my sandwich",
+        "moderator_id": 1497188329412886588,
+        "timestamp": "2026-10-16T15:33:12.405067+00:00"
+      }
+    ]
+  },
+  "1512099574045479016": {
+    "count": 3,
+    "history": [
+      {
+        "reason": "he ate my sandwich",
+        "moderator_id": 1497188329412886588,
+        "timestamp": "2026-10-16T15:34:08.880200+00:00"
+      },
+      {
+        "reason": "he ate my sandwich again",
+        "moderator_id": 1497188329412886588,
+        "timestamp": "2026-10-16T15:35:29.851256+00:00"
+      },
+      {
+        "reason": "sandwich stealer",
+        "moderator_id": 1497188329412886588,
+        "timestamp": "2026-10-16T15:35:43.319808+00:00"
+      }
+    ]
+  },
+  "1496165806306758730": {
+    "count": 1,
+    "history": [
+      {
+        "reason": "Advertising",
+        "moderator_id": 1497188329412886588,
+        "timestamp": "2026-10-17T02:11:20.061550+00:00"
+      }
+    ]
+  },
+  "1461038002540118136": {
+    "count": 1,
+    "history": [
+      {
+        "reason": "Be Respectfull",
+        "moderator_id": 1359186600797671507,
+        "timestamp": "2026-10-17T13:35:46.856700+00:00"
+      }
+    ]
+  },
+  "1382678169055658007": {
+    "count": 1,
+    "history": [
+      {
+        "reason": "promoting",
+        "moderator_id": 1496042391248048172,
+        "timestamp": "2026-10-17T16:15:49.361530+00:00"
+      }
+    ]
+  },
+  "1350024159526260789": {
+    "count": 2,
+    "history": [
+      {
+        "reason": "promotion",
+        "moderator_id": 1496042391248048172,
+        "timestamp": "2026-10-18T03:05:58.156011+00:00"
+      },
+      {
+        "reason": "promotion",
+        "moderator_id": 1496042391248048172,
+        "timestamp": "2026-10-18T03:06:17.948563+00:00"
+      }
+    ]
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "testers": {
+    "1552152527271759872": {
+      "username": "Kindstone",
+      "tests": 10,
+      "gamemodes": {
+        "mace": 10
+      }
+    },
+    "1010807229202563093": {
+      "username": "Sword Dia \u3005 wr3kx",
+      "tests": 4,
+      "gamemodes": {
+        "sword": 4
+      }
+    },
+    "919987770397708340": {
+      "username": "Halt",
+      "tests": 23,
+      "gamemodes": {
+        "sword": 11,
+        "uhc": 4,
+        "nethop": 8
+      }
+    },
+    "1542971203919028337": {
+      "username": "Cpvp \u3005ItzKingMcc",
+      "tests": 2,
+      "gamemodes": {
+        "vanilla": 2
+      }
+    },
+    "1355126879564206120": {
+      "username": "\u2727VoidEternae\u2727 \ufe3b\u30c7\u2550\u4e00",
+      "tests": 4,
+      "gamemodes": {
+        "mace": 4
+      }
+    },
+    "1404387345481994321": {
+      "username": "721ms",
+      "tests": 6,
+      "gamemodes": {
+        "mace": 5,
+        "sword": 1
+      }
+    },
+    "1401231998160212058": {
+      "username": "Veiled",
+      "tests": 2,
+      "gamemodes": {
+        "sword": 2
+      }
+    },
+    "1095663522962210896": {
+      "username": "Add to all ht3 and purge",
+      "tests": 4,
+      "gamemodes": {
+        "nethop": 4
+      }
+    },
+    "1535018806706044948": {
+      "username": "EU | Cluxtched",
+      "tests": 14,
+      "gamemodes": {
+        "mace": 6,
+        "smp": 2,
+        "nethop": 1,
+        "uhc": 1,
+        "axe": 1,
+        "vanilla": 1,
+        "pot": 1,
+        "sword": 1
+      }
+    },
+    "1319638493038641163": {
+      "username": "EU | Zolari",
+      "tests": 4,
+      "gamemodes": {
+        "sword": 4
+      }
+    },
+    "1292074432776507434": {
+      "username": "AS | ayyannomi",
+      "tests": 3,
+      "gamemodes": {
+        "mace": 3
+      }
+    }
+  }
+}

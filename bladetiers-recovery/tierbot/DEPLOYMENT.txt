@@ -1,0 +1,21 @@
+BladeTiers clean deployment bundle
+
+Recovered from saved BladeTiers source snapshots in ChatGPT Library.
+
+Included:
+- bot.py — reconstructed latest clean bot source
+- player_api.py — player API
+- requirements.txt — Python dependencies
+- .env.example — environment template
+- tiers.json — recovery data file
+- queue.json — recovery queue structure
+- registrations.txt — recovery registration file
+- supervisor-tierbot.conf — Supervisor bot config
+- supervisor-player-api.conf — Supervisor API config
+- install.sh — base installer
+
+IMPORTANT:
+- Fill .env with your real DISCORD_TOKEN and GUILD_ID.
+- Do NOT put secrets/tokens in this ZIP.
+- Restore any real tiers.json, registrations.txt, skins/, results/, or other backups separately.
+- The internal/API gamemode key remains `nethop`.
