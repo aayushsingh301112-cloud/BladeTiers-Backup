@@ -9,7 +9,7 @@
   "uhc": [],
   "spear": [],
   "vanilla_panel_message_id": 1560256388343660565,
-  "mace_panel_message_id": 1561733758724349953,
+  "mace_panel_message_id": 1562117766402810019,
   "sword_panel_message_id": 1561255586379731045,
   "nethop_waitlist": [
     {
@@ -390,11 +390,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1160210811730534510",
-      "username": "Gamerzsmarty547",
-      "region": "AS"
-    },
-    {
       "user_id": "1244674460561309728",
       "username": "V3rticalMC",
       "region": "AS"
@@ -480,11 +475,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1151795622735790110",
-      "username": "JUTT_007",
-      "region": "AS"
-    },
-    {
       "user_id": "1513821691720237147",
       "username": "Mracheivment",
       "region": "AS"
@@ -497,6 +487,11 @@
     {
       "user_id": "1493973356360241286",
       "username": "Am_Azure",
+      "region": "AS"
+    },
+    {
+      "user_id": "1380618039153790986",
+      "username": "Iamcheaterr",
       "region": "AS"
     }
   ],
@@ -834,6 +829,11 @@
     {
       "user_id": "1521867642925744228",
       "username": "NoobPlayer7",
+      "region": "AS"
+    },
+    {
+      "user_id": "1535211077221093386",
+      "username": "ParticleOG",
       "region": "AS"
     }
   ],
@@ -1717,5 +1717,6 @@
   "sword_closed_message_id": 1561257280538935297,
   "smp_closed_message_id": 1561627951123005471,
   "uhc_closed_message_id": 1561634504844509195,
-  "mace_closed_message_id": 1561747734606651526
+  "mace_server": "play.cactusmc.xyz",
+  "mace_active_tester": "1292074432776507434"
 }
