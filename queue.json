@@ -493,6 +493,11 @@
       "user_id": "1380618039153790986",
       "username": "Iamcheaterr",
       "region": "AS"
+    },
+    {
+      "user_id": "1253723468348919858",
+      "username": "SwiftPierce",
+      "region": "AS"
     }
   ],
   "sword_waitlist": [
@@ -1717,6 +1722,5 @@
   "sword_closed_message_id": 1561257280538935297,
   "smp_closed_message_id": 1561627951123005471,
   "uhc_closed_message_id": 1561634504844509195,
-  "mace_server": "play.cactusmc.xyz",
-  "mace_active_tester": "1292074432776507434"
+  "mace_closed_message_id": 1562126786202964121
 }
