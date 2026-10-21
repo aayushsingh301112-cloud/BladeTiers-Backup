@@ -495,11 +495,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1380618039153790986",
-      "username": "Iamcheaterr",
-      "region": "AS"
-    },
-    {
       "user_id": "1253723468348919858",
       "username": "SwiftPierce",
       "region": "AS"
@@ -1751,7 +1746,8 @@
   "pot_panel_message_id": 1560256713658208380,
   "pot_closed_message_id": 1560256810433380413,
   "mace_currently_testing": [
-    "shakhawathoss069"
+    "shakhawathoss069",
+    "Iamcheaterr"
   ],
   "nethop_closed_message_id": 1560872092315033641,
   "sword_closed_message_id": 1561257280538935297,
