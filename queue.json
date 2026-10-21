@@ -9,7 +9,7 @@
   "uhc": [],
   "spear": [],
   "vanilla_panel_message_id": 1560256388343660565,
-  "mace_panel_message_id": 1562122533078302853,
+  "mace_panel_message_id": 1562427981484523652,
   "sword_panel_message_id": 1561255586379731045,
   "nethop_waitlist": [
     {
@@ -1757,5 +1757,6 @@
   "sword_closed_message_id": 1561257280538935297,
   "smp_closed_message_id": 1561627951123005471,
   "uhc_closed_message_id": 1561634504844509195,
-  "mace_closed_message_id": 1562126786202964121
+  "mace_server": "play.cactusmc.xyz",
+  "mace_active_tester": "1292074432776507434"
 }
