@@ -76,9 +76,10 @@
     },
     "1416444757626064996": {
       "username": "AS | Pvt_Ankit",
-      "tests": 3,
+      "tests": 4,
       "gamemodes": {
-        "uhc": 3
+        "uhc": 3,
+        "sword": 1
       }
     },
     "1497188329412886588": {
