@@ -8,7 +8,7 @@
   "nethop": [],
   "uhc": [],
   "spear": [],
-  "vanilla_panel_message_id": 1562892424869838879,
+  "vanilla_panel_message_id": 1562903693102288959,
   "mace_panel_message_id": 1562427981484523652,
   "sword_panel_message_id": 1562818360868208722,
   "nethop_waitlist": [
@@ -310,6 +310,11 @@
     {
       "user_id": "1535147112596115467",
       "username": "WellSniffer",
+      "region": "AS"
+    },
+    {
+      "user_id": "1557401571795673162",
+      "username": "Vijay_Rajput",
       "region": "AS"
     }
   ],
@@ -1862,5 +1867,6 @@
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
-  "vanilla_closed_message_id": 1562893723174576171
+  "vanilla_server": "nppvp.xyz",
+  "vanilla_active_tester": "1446851384656793751"
 }
