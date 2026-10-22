@@ -1682,11 +1682,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1292074432776507434",
-      "username": "NotSaadAli_",
-      "region": "AS"
-    },
-    {
       "user_id": "1469373918430236703",
       "username": "byyGale863",
       "region": "AS"
@@ -1855,6 +1850,6 @@
   "vanilla_server": "nppvp.xyz",
   "vanilla_active_tester": "1446851384656793751",
   "vanilla_currently_testing": [
-    "VenzorDragon"
+    "NotSaadAli_"
   ]
 }

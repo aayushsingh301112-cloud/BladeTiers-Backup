@@ -90,6 +90,13 @@
         "smp": 3,
         "uhc": 7
       }
+    },
+    "1446851384656793751": {
+      "username": "lolipopy331",
+      "tests": 1,
+      "gamemodes": {
+        "vanilla": 1
+      }
     }
   }
 }
