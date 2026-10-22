@@ -1727,11 +1727,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1487826227304861902",
-      "username": "Lowkey_ze",
-      "region": "AS"
-    },
-    {
       "user_id": "1244674460561309728",
       "username": "V3rticalMC",
       "region": "AS"
@@ -1868,5 +1863,8 @@
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
   "vanilla_server": "nppvp.xyz",
-  "vanilla_active_tester": "1446851384656793751"
+  "vanilla_active_tester": "1446851384656793751",
+  "vanilla_currently_testing": [
+    "Lowkey_ze"
+  ]
 }
