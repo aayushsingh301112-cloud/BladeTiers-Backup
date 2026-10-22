@@ -2,8 +2,13 @@
   "axe": [],
   "sword": [
     {
-      "user_id": "1187040189604970496",
-      "username": "_ItsNeha63",
+      "user_id": "1358032154369720401",
+      "username": "KaiRetsu",
+      "region": "MEA"
+    },
+    {
+      "user_id": "1311514736428580956",
+      "username": "SrujanWasAlive",
       "region": "AS"
     },
     {
@@ -12,9 +17,9 @@
       "region": "AS"
     },
     {
-      "user_id": "1358032154369720401",
-      "username": "KaiRetsu",
-      "region": "MEA"
+      "user_id": "1521867642925744228",
+      "username": "NoobPlayer7",
+      "region": "AS"
     }
   ],
   "vanilla": [],
@@ -770,11 +775,6 @@
     {
       "user_id": "1224533175536189543",
       "username": "Bossclass_",
-      "region": "AS"
-    },
-    {
-      "user_id": "1311514736428580956",
-      "username": "SrujanWasAlive",
       "region": "AS"
     },
     {
@@ -1851,6 +1851,7 @@
   "sword_server": "alwto.net",
   "sword_active_tester": "919987770397708340",
   "sword_currently_testing": [
-    "NoobPlayer7"
+    "NoobPlayer7",
+    "_ItsNeha63"
   ]
 }
