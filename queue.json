@@ -1,32 +1,6 @@
 {
   "axe": [],
-  "sword": [
-    {
-      "user_id": "1311514736428580956",
-      "username": "SrujanWasAlive",
-      "region": "AS"
-    },
-    {
-      "user_id": "1305142990758744114",
-      "username": "TechGaming0668",
-      "region": "AS"
-    },
-    {
-      "user_id": "1521867642925744228",
-      "username": "NoobPlayer7",
-      "region": "AS"
-    },
-    {
-      "user_id": "1156558284522795018",
-      "username": "MED_007",
-      "region": "MEA"
-    },
-    {
-      "user_id": "1151795622735790110",
-      "username": "JUTT_007",
-      "region": "AS"
-    }
-  ],
+  "sword": [],
   "vanilla": [],
   "smp": [],
   "pot": [],
@@ -858,11 +832,6 @@
       "region": "AS"
     },
     {
-      "user_id": "804210856471691284",
-      "username": "BaPlaYzZ",
-      "region": "AS"
-    },
-    {
       "user_id": "1535211077221093386",
       "username": "ParticleOG",
       "region": "AS"
@@ -895,6 +864,16 @@
     {
       "user_id": "1535147112596115467",
       "username": "WellSniffer",
+      "region": "AS"
+    },
+    {
+      "user_id": "1305142990758744114",
+      "username": "TechGaming0668",
+      "region": "AS"
+    },
+    {
+      "user_id": "1446851384656793751",
+      "username": "lolipoppy331",
       "region": "AS"
     }
   ],
@@ -1843,9 +1822,5 @@
   "smp_closed_message_id": 1561627951123005471,
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
-  "sword_server": "alwto.net",
-  "sword_active_tester": "919987770397708340",
-  "sword_currently_testing": [
-    "KaiRetsu"
-  ]
+  "sword_closed_message_id": 1562825268052234304
 }
