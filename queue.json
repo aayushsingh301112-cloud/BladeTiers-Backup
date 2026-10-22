@@ -8,7 +8,7 @@
   "nethop": [],
   "uhc": [],
   "spear": [],
-  "vanilla_panel_message_id": 1562861391889563660,
+  "vanilla_panel_message_id": 1562890977990152286,
   "mace_panel_message_id": 1562427981484523652,
   "sword_panel_message_id": 1562818360868208722,
   "nethop_waitlist": [
@@ -890,6 +890,11 @@
       "user_id": "935756965307625523",
       "username": "terodai",
       "region": "AS"
+    },
+    {
+      "user_id": "1156558284522795018",
+      "username": "MED_007",
+      "region": "MEA"
     }
   ],
   "axe_waitlist": [
@@ -1543,6 +1548,11 @@
       "user_id": "1384781206385852447",
       "username": "KyroxxyQT",
       "region": "AS"
+    },
+    {
+      "user_id": "1156558284522795018",
+      "username": "MED_007",
+      "region": "MEA"
     }
   ],
   "vanilla_waitlist": [
@@ -1807,11 +1817,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1156558284522795018",
-      "username": "MED_007",
-      "region": "MEA"
-    },
-    {
       "user_id": "1502010092453888100",
       "username": "DarkFury",
       "region": "AS"
@@ -1830,6 +1835,11 @@
       "user_id": "1535147112596115467",
       "username": "WellSniffer",
       "region": "AS"
+    },
+    {
+      "user_id": "1156558284522795018",
+      "username": "MED_007",
+      "region": "MEA"
     }
   ],
   "nethop_panel_message_id": 1560863722824798299,
@@ -1847,5 +1857,6 @@
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
-  "vanilla_closed_message_id": 1562885715358912624
+  "vanilla_server": "nppvp.xyz",
+  "vanilla_active_tester": "1446851384656793751"
 }
