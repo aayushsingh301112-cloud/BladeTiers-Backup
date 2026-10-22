@@ -1,12 +1,6 @@
 {
   "axe": [],
-  "sword": [
-    {
-      "user_id": "1326509375107633228",
-      "username": "Larpski_22",
-      "region": "AS"
-    }
-  ],
+  "sword": [],
   "vanilla": [],
   "smp": [],
   "pot": [],
@@ -870,6 +864,11 @@
     {
       "user_id": "1358032154369720401",
       "username": "KaiRetsu",
+      "region": "MEA"
+    },
+    {
+      "user_id": "1416014486413901874",
+      "username": "MrQuartz12_",
       "region": "MEA"
     }
   ],
@@ -1786,6 +1785,6 @@
   "sword_server": "alwto.net",
   "sword_active_tester": "1416444757626064996",
   "sword_currently_testing": [
-    "MrQuartz12_"
+    "Larpski_22"
   ]
 }
