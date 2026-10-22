@@ -94,10 +94,6 @@
   "Gamerzsmarty547": {
     "sword": "LT5"
   },
-  "Hell_Void12": {
-    "mace": "LT5",
-    "nethop": "LT5"
-  },
   "OrenGoated": {
     "nethop": "LT5"
   },
@@ -239,5 +235,9 @@
   },
   "Iamcheaterr": {
     "mace": "LT4"
+  },
+  "HIT_61": {
+    "mace": "LT5",
+    "nethop": "LT5"
   }
 }
