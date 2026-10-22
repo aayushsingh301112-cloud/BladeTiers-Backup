@@ -1,6 +1,22 @@
 {
   "axe": [],
-  "sword": [],
+  "sword": [
+    {
+      "user_id": "1187040189604970496",
+      "username": "_ItsNeha63",
+      "region": "AS"
+    },
+    {
+      "user_id": "1305142990758744114",
+      "username": "TechGaming0668",
+      "region": "AS"
+    },
+    {
+      "user_id": "1358032154369720401",
+      "username": "KaiRetsu",
+      "region": "MEA"
+    }
+  ],
   "vanilla": [],
   "smp": [],
   "pot": [],
@@ -10,7 +26,7 @@
   "spear": [],
   "vanilla_panel_message_id": 1560256388343660565,
   "mace_panel_message_id": 1562427981484523652,
-  "sword_panel_message_id": 1562684629612240979,
+  "sword_panel_message_id": 1562818360868208722,
   "nethop_waitlist": [
     {
       "user_id": "1376765496166449173",
@@ -752,11 +768,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1305142990758744114",
-      "username": "TechGaming0668",
-      "region": "AS"
-    },
-    {
       "user_id": "1224533175536189543",
       "username": "Bossclass_",
       "region": "AS"
@@ -799,11 +810,6 @@
     {
       "user_id": "1506865719437164645",
       "username": "Velrox_OG",
-      "region": "AS"
-    },
-    {
-      "user_id": "1187040189604970496",
-      "username": "_ItsNeha63",
       "region": "AS"
     },
     {
@@ -862,11 +868,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1521867642925744228",
-      "username": "NoobPlayer7",
-      "region": "AS"
-    },
-    {
       "user_id": "1535211077221093386",
       "username": "ParticleOG",
       "region": "AS"
@@ -880,11 +881,6 @@
       "user_id": "1010529935611396156",
       "username": "DheerajarriorOP",
       "region": "AS"
-    },
-    {
-      "user_id": "1358032154369720401",
-      "username": "KaiRetsu",
-      "region": "MEA"
     },
     {
       "user_id": "1416014486413901874",
@@ -1852,5 +1848,9 @@
   "smp_closed_message_id": 1561627951123005471,
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
-  "sword_closed_message_id": 1562688077078732801
+  "sword_server": "alwto.net",
+  "sword_active_tester": "919987770397708340",
+  "sword_currently_testing": [
+    "NoobPlayer7"
+  ]
 }
