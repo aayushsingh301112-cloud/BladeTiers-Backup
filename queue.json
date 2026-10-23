@@ -1,7 +1,13 @@
 {
   "axe": [],
   "sword": [],
-  "vanilla": [],
+  "vanilla": [
+    {
+      "user_id": "1354359284758085642",
+      "username": "ItzNexusYT",
+      "region": "AS"
+    }
+  ],
   "smp": [],
   "pot": [],
   "mace": [],
@@ -1857,11 +1863,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1354359284758085642",
-      "username": "ItzNexusYT",
-      "region": "AS"
-    },
-    {
       "user_id": "1502010092453888100",
       "username": "DarkFury",
       "region": "AS"
@@ -1899,11 +1900,6 @@
     {
       "user_id": "1282625474916257813",
       "username": "SnifferX2",
-      "region": "AS"
-    },
-    {
-      "user_id": "1526093522267013120",
-      "username": "DREWINXGS",
       "region": "AS"
     }
   ],
