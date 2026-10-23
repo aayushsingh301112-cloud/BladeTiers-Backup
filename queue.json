@@ -3,11 +3,6 @@
   "sword": [],
   "vanilla": [
     {
-      "user_id": "1253723468348919858",
-      "username": "SwiftPierce",
-      "region": "AS"
-    },
-    {
       "user_id": "1513749883717292232",
       "username": "Vishu_OG",
       "region": "AS"
@@ -15,13 +10,18 @@
   ],
   "smp": [
     {
-      "user_id": "1513749883717292232",
-      "username": "Vishu_OG",
+      "user_id": "1506865719437164645",
+      "username": "Velrox_OG",
       "region": "AS"
     },
     {
-      "user_id": "1506865719437164645",
-      "username": "Velrox_OG",
+      "user_id": "1151795622735790110",
+      "username": "JUTT_007",
+      "region": "AS"
+    },
+    {
+      "user_id": "1526093522267013120",
+      "username": "DREWINXGS",
       "region": "AS"
     },
     {
@@ -30,9 +30,9 @@
       "region": "AS"
     },
     {
-      "user_id": "1151795622735790110",
-      "username": "JUTT_007",
-      "region": "AS"
+      "user_id": "1156558284522795018",
+      "username": "MED_007",
+      "region": "MEA"
     }
   ],
   "pot": [],
@@ -590,6 +590,11 @@
       "user_id": "1156558284522795018",
       "username": "MED_007",
       "region": "MEA"
+    },
+    {
+      "user_id": "1292074432776507434",
+      "username": "NotSaadAli_",
+      "region": "AS"
     }
   ],
   "sword_waitlist": [
@@ -1473,11 +1478,6 @@
       "user_id": "1387833253347463458",
       "username": "KairavOP",
       "region": "AS"
-    },
-    {
-      "user_id": "1526093522267013120",
-      "username": "DREWINXGS",
-      "region": "AS"
     }
   ],
   "uhc_waitlist": [
@@ -1910,12 +1910,12 @@
   "sword_closed_message_id": 1562825268052234304,
   "vanilla_server": "nppvp.xyz",
   "vanilla_active_tester": "1446851384656793751",
-  "vanilla_currently_testing": [
-    "DREWINXGS"
-  ],
   "smp_server": "alwto.net",
   "smp_active_tester": "1497188329412886588",
   "smp_currently_testing": [
+    "Vishu_OG"
+  ],
+  "vanilla_currently_testing": [
     "SwiftPierce"
   ]
 }
