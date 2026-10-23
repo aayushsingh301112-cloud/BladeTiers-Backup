@@ -559,6 +559,11 @@
       "user_id": "1311514736428580956",
       "username": "SrujanWasAlive",
       "region": "AS"
+    },
+    {
+      "user_id": "1156558284522795018",
+      "username": "MED_007",
+      "region": "MEA"
     }
   ],
   "sword_waitlist": [
@@ -1883,11 +1888,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1156558284522795018",
-      "username": "MED_007",
-      "region": "MEA"
-    },
-    {
       "user_id": "904678902876737556",
       "username": "FrqndshIp",
       "region": "AS"
@@ -1901,6 +1901,11 @@
       "user_id": "1282625474916257813",
       "username": "SnifferX2",
       "region": "AS"
+    },
+    {
+      "user_id": "1156558284522795018",
+      "username": "MED_007",
+      "region": "MEA"
     }
   ],
   "nethop_panel_message_id": 1560863722824798299,
