@@ -100,9 +100,9 @@
     },
     "1271378000448847943": {
       "username": "ICHIGO X",
-      "tests": 1,
+      "tests": 2,
       "gamemodes": {
-        "nethop": 1
+        "nethop": 2
       }
     }
   }

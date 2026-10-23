@@ -7,18 +7,28 @@
   "mace": [],
   "nethop": [
     {
-      "user_id": "1487826227304861902",
-      "username": "Lowkey_ze",
+      "user_id": "1469373918430236703",
+      "username": "byyGale863",
+      "region": "AS"
+    },
+    {
+      "user_id": "1526489957915426826",
+      "username": "SamXDPlayz_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1151795622735790110",
+      "username": "JUTT_007",
+      "region": "AS"
+    },
+    {
+      "user_id": "1510929067933958285",
+      "username": "Mavrix_YT",
       "region": "AS"
     },
     {
       "user_id": "1521867642925744228",
       "username": "NoobPlayer7",
-      "region": "AS"
-    },
-    {
-      "user_id": "1469373918430236703",
-      "username": "byyGale863",
       "region": "AS"
     }
   ],
@@ -219,11 +229,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1526489957915426826",
-      "username": "SamXDPlayz_",
-      "region": "AS"
-    },
-    {
       "user_id": "1305142990758744114",
       "username": "TechGaming0668",
       "region": "AS"
@@ -274,11 +279,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1151795622735790110",
-      "username": "JUTT_007",
-      "region": "AS"
-    },
-    {
       "user_id": "1493973356360241286",
       "username": "Am_Azure",
       "region": "AS"
@@ -291,11 +291,6 @@
     {
       "user_id": "1385268491933978877",
       "username": "Josadvent",
-      "region": "AS"
-    },
-    {
-      "user_id": "1510929067933958285",
-      "username": "Mavrix_YT",
       "region": "AS"
     },
     {
@@ -579,6 +574,11 @@
       "user_id": "1491831058889576600",
       "username": "SilverEyes_27",
       "region": "MEA"
+    },
+    {
+      "user_id": "1542491003410452591",
+      "username": "Tayyab_ogs",
+      "region": "AS"
     }
   ],
   "sword_waitlist": [
@@ -1848,7 +1848,7 @@
       "region": "AS"
     }
   ],
-  "nethop_panel_message_id": 1563162082625593466,
+  "nethop_panel_message_id": 1563164796109455393,
   "smp_panel_message_id": 1563133113918554174,
   "uhc_panel_message_id": 1561627861348122685,
   "axe_panel_message_id": 1560256114078126182,
