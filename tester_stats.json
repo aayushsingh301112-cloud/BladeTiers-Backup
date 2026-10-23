@@ -84,10 +84,10 @@
     },
     "1497188329412886588": {
       "username": "\ud835\udc2f\ud835\udc1a\ud835\udc29\ud835\udc1e",
-      "tests": 17,
+      "tests": 18,
       "gamemodes": {
         "mace": 6,
-        "smp": 4,
+        "smp": 5,
         "uhc": 7
       }
     },

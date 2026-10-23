@@ -3,23 +3,17 @@
   "sword": [],
   "vanilla": [
     {
-      "user_id": "904678902876737556",
-      "username": "FrqndshIp",
-      "region": "AS"
-    }
-  ],
-  "smp": [
-    {
-      "user_id": "1292074432776507434",
-      "username": "NotSaadAli_",
+      "user_id": "1370349103816638558",
+      "username": "MGGAMER_X",
       "region": "AS"
     },
     {
-      "user_id": "804210856471691284",
-      "username": "BaPlaYzZ",
+      "user_id": "1387833253347463458",
+      "username": "KairavOP",
       "region": "AS"
     }
   ],
+  "smp": [],
   "pot": [],
   "mace": [],
   "nethop": [],
@@ -1849,11 +1843,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1387833253347463458",
-      "username": "KairavOP",
-      "region": "AS"
-    },
-    {
       "user_id": "1282625474916257813",
       "username": "SnifferX2",
       "region": "AS"
@@ -1875,12 +1864,8 @@
   "sword_closed_message_id": 1562825268052234304,
   "vanilla_server": "nppvp.xyz",
   "vanilla_active_tester": "1446851384656793751",
-  "smp_server": "alwto.net",
-  "smp_active_tester": "1497188329412886588",
-  "smp_currently_testing": [
-    "MGGAMER_X"
-  ],
   "vanilla_currently_testing": [
     "Vishu_OG"
-  ]
+  ],
+  "smp_closed_message_id": 1563145091755941891
 }
