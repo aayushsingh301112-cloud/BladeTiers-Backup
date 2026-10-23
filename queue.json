@@ -1,13 +1,7 @@
 {
   "axe": [],
   "sword": [],
-  "vanilla": [
-    {
-      "user_id": "1502010092453888100",
-      "username": "DarkFury",
-      "region": "AS"
-    }
-  ],
+  "vanilla": [],
   "smp": [],
   "pot": [],
   "mace": [],
@@ -573,6 +567,11 @@
     {
       "user_id": "1292074432776507434",
       "username": "NotSaadAli_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
       "region": "AS"
     }
   ],
@@ -1836,6 +1835,16 @@
       "user_id": "1282625474916257813",
       "username": "SnifferX2",
       "region": "AS"
+    },
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
+      "region": "AS"
+    },
+    {
+      "user_id": "1387833253347463458",
+      "username": "KairavOP",
+      "region": "AS"
     }
   ],
   "nethop_panel_message_id": 1560863722824798299,
@@ -1852,10 +1861,6 @@
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
-  "vanilla_server": "nppvp.xyz",
-  "vanilla_active_tester": "1446851384656793751",
   "smp_closed_message_id": 1563145091755941891,
-  "vanilla_currently_testing": [
-    "KairavOP"
-  ]
+  "vanilla_closed_message_id": 1563152007416778926
 }
