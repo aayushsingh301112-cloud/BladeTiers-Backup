@@ -1,18 +1,7 @@
 {
   "axe": [],
   "sword": [],
-  "vanilla": [
-    {
-      "user_id": "1319895068206694451",
-      "username": "VoidXPain",
-      "region": "AS"
-    },
-    {
-      "user_id": "1491831058889576600",
-      "username": "SilverEyes_27",
-      "region": "MEA"
-    }
-  ],
+  "vanilla": [],
   "smp": [],
   "pot": [],
   "mace": [],
@@ -336,6 +325,11 @@
     {
       "user_id": "1481196597743456297",
       "username": "Notalexxy_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1271378000448847943",
+      "username": "BigMacBurgerFa4",
       "region": "AS"
     }
   ],
@@ -1871,6 +1865,6 @@
   "vanilla_server": "nppvp.xyz",
   "vanilla_active_tester": "1446851384656793751",
   "vanilla_currently_testing": [
-    "WellSniffer"
+    "SilverEyes_27"
   ]
 }
