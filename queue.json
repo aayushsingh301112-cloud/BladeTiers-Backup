@@ -5,38 +5,7 @@
   "smp": [],
   "pot": [],
   "mace": [],
-  "nethop": [
-    {
-      "user_id": "1526489957915426826",
-      "username": "SamXDPlayz_",
-      "region": "AS"
-    },
-    {
-      "user_id": "1151795622735790110",
-      "username": "JUTT_007",
-      "region": "AS"
-    },
-    {
-      "user_id": "1510929067933958285",
-      "username": "Mavrix_YT",
-      "region": "AS"
-    },
-    {
-      "user_id": "1521867642925744228",
-      "username": "NoobPlayer7",
-      "region": "AS"
-    },
-    {
-      "user_id": "1376037418796449812",
-      "username": "WebHunterz1",
-      "region": "AS"
-    },
-    {
-      "user_id": "1365507135152328704",
-      "username": "3p0ts_",
-      "region": "AS"
-    }
-  ],
+  "nethop": [],
   "uhc": [],
   "spear": [],
   "vanilla_panel_message_id": 1563153224632893482,
@@ -1843,7 +1812,7 @@
       "region": "AS"
     }
   ],
-  "nethop_panel_message_id": 1563167916621439119,
+  "nethop_panel_message_id": 1563169877244776621,
   "smp_panel_message_id": 1563133113918554174,
   "uhc_panel_message_id": 1561627861348122685,
   "axe_panel_message_id": 1560256114078126182,
@@ -1858,6 +1827,5 @@
   "sword_closed_message_id": 1562825268052234304,
   "smp_closed_message_id": 1563145091755941891,
   "vanilla_closed_message_id": 1563160882186428447,
-  "nethop_server": "alwto.net",
-  "nethop_active_tester": "1271378000448847943"
+  "nethop_closed_message_id": 1563171082888941599
 }
