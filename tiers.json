@@ -136,7 +136,8 @@
   "VoidXPain": {
     "mace": "HT5",
     "nethop": "LT3",
-    "sword": "LT3"
+    "sword": "LT3",
+    "vanilla": "HT5"
   },
   "RyotaXz": {
     "mace": "LT5"

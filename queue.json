@@ -1,16 +1,22 @@
 {
   "axe": [],
   "sword": [],
-  "vanilla": [],
-  "smp": [
+  "vanilla": [
     {
-      "user_id": "1446851384656793751",
-      "username": "lolipoppy331",
+      "user_id": "904678902876737556",
+      "username": "FrqndshIp",
       "region": "AS"
-    },
+    }
+  ],
+  "smp": [
     {
       "user_id": "1292074432776507434",
       "username": "NotSaadAli_",
+      "region": "AS"
+    },
+    {
+      "user_id": "804210856471691284",
+      "username": "BaPlaYzZ",
       "region": "AS"
     }
   ],
@@ -1429,11 +1435,6 @@
       "region": "AS"
     },
     {
-      "user_id": "804210856471691284",
-      "username": "BaPlaYzZ",
-      "region": "AS"
-    },
-    {
       "user_id": "1435661275605631089",
       "username": "RyzenXSpear",
       "region": "AS"
@@ -1693,11 +1694,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1319895068206694451",
-      "username": "VoidXPain",
-      "region": "AS"
-    },
-    {
       "user_id": "1538872575688572958",
       "username": "taha3mkw",
       "region": "EU"
@@ -1853,11 +1849,6 @@
       "region": "AS"
     },
     {
-      "user_id": "904678902876737556",
-      "username": "FrqndshIp",
-      "region": "AS"
-    },
-    {
       "user_id": "1387833253347463458",
       "username": "KairavOP",
       "region": "AS"
@@ -1888,5 +1879,8 @@
   "smp_active_tester": "1497188329412886588",
   "smp_currently_testing": [
     "MGGAMER_X"
+  ],
+  "vanilla_currently_testing": [
+    "Vishu_OG"
   ]
 }
