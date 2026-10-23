@@ -8,7 +8,7 @@
   "nethop": [],
   "uhc": [],
   "spear": [],
-  "vanilla_panel_message_id": 1562903693102288959,
+  "vanilla_panel_message_id": 1563100775561830421,
   "mace_panel_message_id": 1562427981484523652,
   "sword_panel_message_id": 1562818360868208722,
   "nethop_waitlist": [
@@ -1682,11 +1682,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1416444757626064996",
-      "username": "Pvt_Ankit",
-      "region": "AS"
-    },
-    {
       "user_id": "1544172449598414868",
       "username": "Icey_gamerXD",
       "region": "AS"
@@ -1905,6 +1900,11 @@
       "user_id": "1282625474916257813",
       "username": "SnifferX2",
       "region": "AS"
+    },
+    {
+      "user_id": "1526093522267013120",
+      "username": "DREWINXGS",
+      "region": "AS"
     }
   ],
   "nethop_panel_message_id": 1560863722824798299,
@@ -1922,5 +1922,9 @@
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
-  "vanilla_closed_message_id": 1562920466270658672
+  "vanilla_server": "nppvp.xyz",
+  "vanilla_active_tester": "1446851384656793751",
+  "vanilla_currently_testing": [
+    "Pvt_Ankit"
+  ]
 }
