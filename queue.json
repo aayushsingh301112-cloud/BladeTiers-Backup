@@ -1912,9 +1912,5 @@
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
-  "vanilla_server": "nppvp.xyz",
-  "vanilla_active_tester": "1446851384656793751",
-  "vanilla_currently_testing": [
-    "MED_007"
-  ]
+  "vanilla_closed_message_id": 1563119529369018410
 }
