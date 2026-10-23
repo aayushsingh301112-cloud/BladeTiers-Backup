@@ -1,7 +1,13 @@
 {
   "axe": [],
   "sword": [],
-  "vanilla": [],
+  "vanilla": [
+    {
+      "user_id": "1435313596820230187",
+      "username": "VeltrixPvP",
+      "region": "AS"
+    }
+  ],
   "smp": [],
   "pot": [],
   "mace": [],
@@ -1782,11 +1788,6 @@
       "region": "EU"
     },
     {
-      "user_id": "1435313596820230187",
-      "username": "VeltrixPvP",
-      "region": "AS"
-    },
-    {
       "user_id": "1532353200387002428",
       "username": "Parthism23",
       "region": "AS"
@@ -1905,6 +1906,6 @@
   "vanilla_server": "nppvp.xyz",
   "vanilla_active_tester": "1446851384656793751",
   "vanilla_currently_testing": [
-    "Cpvpdestroyer"
+    "MED_007"
   ]
 }
