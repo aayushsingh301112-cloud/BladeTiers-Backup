@@ -1197,6 +1197,11 @@
       "user_id": "1387833253347463458",
       "username": "KairavOP",
       "region": "AS"
+    },
+    {
+      "user_id": "1502010092453888100",
+      "username": "DarkFury",
+      "region": "AS"
     }
   ],
   "pot_waitlist": [
@@ -1847,7 +1852,7 @@
       "region": "AS"
     }
   ],
-  "nethop_panel_message_id": 1560863722824798299,
+  "nethop_panel_message_id": 1563162082625593466,
   "smp_panel_message_id": 1563133113918554174,
   "uhc_panel_message_id": 1561627861348122685,
   "axe_panel_message_id": 1560256114078126182,
@@ -1857,14 +1862,11 @@
   "mace_currently_testing": [
     "shakhawathoss069"
   ],
-  "nethop_closed_message_id": 1560872092315033641,
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
   "smp_closed_message_id": 1563145091755941891,
-  "vanilla_server": "nppvp.xyz",
-  "vanilla_active_tester": "1446851384656793751",
-  "vanilla_currently_testing": [
-    "Not_Mineram"
-  ]
+  "vanilla_closed_message_id": 1563160882186428447,
+  "nethop_server": "alwto.net",
+  "nethop_active_tester": "1271378000448847943"
 }
