@@ -1895,11 +1895,6 @@
       "user_id": "1282625474916257813",
       "username": "SnifferX2",
       "region": "AS"
-    },
-    {
-      "user_id": "1156558284522795018",
-      "username": "MED_007",
-      "region": "MEA"
     }
   ],
   "nethop_panel_message_id": 1560863722824798299,
@@ -1918,5 +1913,8 @@
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
   "vanilla_server": "nppvp.xyz",
-  "vanilla_active_tester": "1446851384656793751"
+  "vanilla_active_tester": "1446851384656793751",
+  "vanilla_currently_testing": [
+    "MED_007"
+  ]
 }
