@@ -1,14 +1,25 @@
 {
   "axe": [],
   "sword": [],
-  "vanilla": [],
+  "vanilla": [
+    {
+      "user_id": "1319895068206694451",
+      "username": "VoidXPain",
+      "region": "AS"
+    },
+    {
+      "user_id": "1491831058889576600",
+      "username": "SilverEyes_27",
+      "region": "MEA"
+    }
+  ],
   "smp": [],
   "pot": [],
   "mace": [],
   "nethop": [],
   "uhc": [],
   "spear": [],
-  "vanilla_panel_message_id": 1563125629975531550,
+  "vanilla_panel_message_id": 1563153224632893482,
   "mace_panel_message_id": 1562427981484523652,
   "sword_panel_message_id": 1562818360868208722,
   "nethop_waitlist": [
@@ -573,6 +584,11 @@
       "user_id": "1319895068206694451",
       "username": "VoidXPain",
       "region": "AS"
+    },
+    {
+      "user_id": "1491831058889576600",
+      "username": "SilverEyes_27",
+      "region": "MEA"
     }
   ],
   "sword_waitlist": [
@@ -1827,18 +1843,8 @@
       "region": "AS"
     },
     {
-      "user_id": "1535147112596115467",
-      "username": "WellSniffer",
-      "region": "AS"
-    },
-    {
       "user_id": "1282625474916257813",
       "username": "SnifferX2",
-      "region": "AS"
-    },
-    {
-      "user_id": "1319895068206694451",
-      "username": "VoidXPain",
       "region": "AS"
     },
     {
@@ -1862,5 +1868,9 @@
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
   "smp_closed_message_id": 1563145091755941891,
-  "vanilla_closed_message_id": 1563152007416778926
+  "vanilla_server": "nppvp.xyz",
+  "vanilla_active_tester": "1446851384656793751",
+  "vanilla_currently_testing": [
+    "WellSniffer"
+  ]
 }
