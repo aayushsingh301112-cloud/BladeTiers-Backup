@@ -1,13 +1,7 @@
 {
   "axe": [],
   "sword": [],
-  "vanilla": [
-    {
-      "user_id": "1354359284758085642",
-      "username": "ItzNexusYT",
-      "region": "AS"
-    }
-  ],
+  "vanilla": [],
   "smp": [],
   "pot": [],
   "mace": [],
@@ -1924,8 +1918,5 @@
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
   "vanilla_server": "nppvp.xyz",
-  "vanilla_active_tester": "1446851384656793751",
-  "vanilla_currently_testing": [
-    "Pvt_Ankit"
-  ]
+  "vanilla_active_tester": "1446851384656793751"
 }

@@ -34,7 +34,8 @@
   "Pvt_Ankit": {
     "sword": "LT3",
     "uhc": "HT4",
-    "nethop": "HT4"
+    "nethop": "HT4",
+    "vanilla": "HT5"
   },
   "just2tick": {
     "mace": "HT3",
@@ -229,7 +230,8 @@
     "mace": "LT5"
   },
   "ItzNexusYT": {
-    "mace": "LT5"
+    "mace": "LT5",
+    "vanilla": "LT5"
   },
   "ZEROX_007": {
     "mace": "LT3"
