@@ -5,7 +5,23 @@
   "smp": [],
   "pot": [],
   "mace": [],
-  "nethop": [],
+  "nethop": [
+    {
+      "user_id": "1487826227304861902",
+      "username": "Lowkey_ze",
+      "region": "AS"
+    },
+    {
+      "user_id": "1521867642925744228",
+      "username": "NoobPlayer7",
+      "region": "AS"
+    },
+    {
+      "user_id": "1469373918430236703",
+      "username": "byyGale863",
+      "region": "AS"
+    }
+  ],
   "uhc": [],
   "spear": [],
   "vanilla_panel_message_id": 1563153224632893482,
@@ -153,11 +169,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1469373918430236703",
-      "username": "byyGale863",
-      "region": "AS"
-    },
-    {
       "user_id": "1401221349661474928",
       "username": "Rudrabauri",
       "region": "AS"
@@ -233,11 +244,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1487826227304861902",
-      "username": "Lowkey_ze",
-      "region": "AS"
-    },
-    {
       "user_id": "1551131990508445789",
       "username": "360mashadul_",
       "region": "AS"
@@ -288,11 +294,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1521867642925744228",
-      "username": "NoobPlayer7",
-      "region": "AS"
-    },
-    {
       "user_id": "1510929067933958285",
       "username": "Mavrix_YT",
       "region": "AS"
@@ -301,11 +302,6 @@
       "user_id": "1358032154369720401",
       "username": "KaiRetsu",
       "region": "MEA"
-    },
-    {
-      "user_id": "1441648355804446904",
-      "username": "stAr_Xd1",
-      "region": "AS"
     },
     {
       "user_id": "1535147112596115467",

@@ -97,6 +97,13 @@
       "gamemodes": {
         "vanilla": 15
       }
+    },
+    "1271378000448847943": {
+      "username": "ICHIGO X",
+      "tests": 1,
+      "gamemodes": {
+        "nethop": 1
+      }
     }
   }
 }
