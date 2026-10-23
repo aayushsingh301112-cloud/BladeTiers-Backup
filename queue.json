@@ -4,18 +4,13 @@
   "vanilla": [],
   "smp": [
     {
-      "user_id": "1292074432776507434",
-      "username": "NotSaadAli_",
+      "user_id": "1446851384656793751",
+      "username": "lolipoppy331",
       "region": "AS"
     },
     {
-      "user_id": "1156558284522795018",
-      "username": "MED_007",
-      "region": "MEA"
-    },
-    {
-      "user_id": "1370349103816638558",
-      "username": "MGGAMER_X",
+      "user_id": "1292074432776507434",
+      "username": "NotSaadAli_",
       "region": "AS"
     }
   ],
@@ -1891,7 +1886,7 @@
   "vanilla_active_tester": "1446851384656793751",
   "smp_server": "alwto.net",
   "smp_active_tester": "1497188329412886588",
-  "vanilla_currently_testing": [
-    "Vishu_OG"
+  "smp_currently_testing": [
+    "MGGAMER_X"
   ]
 }
