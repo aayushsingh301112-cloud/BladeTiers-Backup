@@ -6,9 +6,35 @@
       "user_id": "1253723468348919858",
       "username": "SwiftPierce",
       "region": "AS"
+    },
+    {
+      "user_id": "1513749883717292232",
+      "username": "Vishu_OG",
+      "region": "AS"
     }
   ],
-  "smp": [],
+  "smp": [
+    {
+      "user_id": "1513749883717292232",
+      "username": "Vishu_OG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1506865719437164645",
+      "username": "Velrox_OG",
+      "region": "AS"
+    },
+    {
+      "user_id": "1292074432776507434",
+      "username": "NotSaadAli_",
+      "region": "AS"
+    },
+    {
+      "user_id": "1151795622735790110",
+      "username": "JUTT_007",
+      "region": "AS"
+    }
+  ],
   "pot": [],
   "mace": [],
   "nethop": [],
@@ -1394,33 +1420,13 @@
       "region": "AS"
     },
     {
-      "user_id": "1506865719437164645",
-      "username": "Velrox_OG",
-      "region": "AS"
-    },
-    {
-      "user_id": "1253723468348919858",
-      "username": "SwiftPierce",
-      "region": "AS"
-    },
-    {
       "user_id": "1187040189604970496",
       "username": "_ItsNeha63",
       "region": "AS"
     },
     {
-      "user_id": "1513749883717292232",
-      "username": "Vishu_OG",
-      "region": "AS"
-    },
-    {
       "user_id": "1354359284758085642",
       "username": "ItzNexusYT",
-      "region": "AS"
-    },
-    {
-      "user_id": "1151795622735790110",
-      "username": "JUTT_007",
       "region": "AS"
     },
     {
@@ -1466,6 +1472,11 @@
     {
       "user_id": "1387833253347463458",
       "username": "KairavOP",
+      "region": "AS"
+    },
+    {
+      "user_id": "1526093522267013120",
+      "username": "DREWINXGS",
       "region": "AS"
     }
   ],
@@ -1884,7 +1895,7 @@
     }
   ],
   "nethop_panel_message_id": 1560863722824798299,
-  "smp_panel_message_id": 1561627677721501779,
+  "smp_panel_message_id": 1563133113918554174,
   "uhc_panel_message_id": 1561627861348122685,
   "axe_panel_message_id": 1560256114078126182,
   "axe_closed_message_id": 1560261030381355109,
@@ -1894,7 +1905,6 @@
     "shakhawathoss069"
   ],
   "nethop_closed_message_id": 1560872092315033641,
-  "smp_closed_message_id": 1561627951123005471,
   "uhc_closed_message_id": 1561634504844509195,
   "mace_closed_message_id": 1562441227457007661,
   "sword_closed_message_id": 1562825268052234304,
@@ -1902,5 +1912,10 @@
   "vanilla_active_tester": "1446851384656793751",
   "vanilla_currently_testing": [
     "DREWINXGS"
+  ],
+  "smp_server": "alwto.net",
+  "smp_active_tester": "1497188329412886588",
+  "smp_currently_testing": [
+    "SwiftPierce"
   ]
 }
