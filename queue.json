@@ -3,8 +3,8 @@
   "sword": [],
   "vanilla": [
     {
-      "user_id": "1435313596820230187",
-      "username": "VeltrixPvP",
+      "user_id": "1253723468348919858",
+      "username": "SwiftPierce",
       "region": "AS"
     }
   ],
@@ -1838,11 +1838,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1253723468348919858",
-      "username": "SwiftPierce",
-      "region": "AS"
-    },
-    {
       "user_id": "1187040189604970496",
       "username": "_ItsNeha63",
       "region": "AS"
@@ -1906,6 +1901,6 @@
   "vanilla_server": "nppvp.xyz",
   "vanilla_active_tester": "1446851384656793751",
   "vanilla_currently_testing": [
-    "MED_007"
+    "DREWINXGS"
   ]
 }

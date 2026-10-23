@@ -224,7 +224,8 @@
   },
   "MED_007": {
     "mace": "HT5",
-    "uhc": "LT3"
+    "uhc": "LT3",
+    "vanilla": "HT5"
   },
   "coolboy100": {
     "mace": "LT5"
