@@ -3,13 +3,8 @@
   "sword": [],
   "vanilla": [
     {
-      "user_id": "1370349103816638558",
-      "username": "MGGAMER_X",
-      "region": "AS"
-    },
-    {
-      "user_id": "1387833253347463458",
-      "username": "KairavOP",
+      "user_id": "1502010092453888100",
+      "username": "DarkFury",
       "region": "AS"
     }
   ],
@@ -1828,11 +1823,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1502010092453888100",
-      "username": "DarkFury",
-      "region": "AS"
-    },
-    {
       "user_id": "1446851384656793751",
       "username": "lolipoppy331",
       "region": "AS"
@@ -1864,8 +1854,8 @@
   "sword_closed_message_id": 1562825268052234304,
   "vanilla_server": "nppvp.xyz",
   "vanilla_active_tester": "1446851384656793751",
+  "smp_closed_message_id": 1563145091755941891,
   "vanilla_currently_testing": [
-    "Vishu_OG"
-  ],
-  "smp_closed_message_id": 1563145091755941891
+    "KairavOP"
+  ]
 }
