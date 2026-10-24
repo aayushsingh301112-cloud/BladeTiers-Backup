@@ -104,6 +104,13 @@
       "gamemodes": {
         "nethop": 3
       }
+    },
+    "910769828997001268": {
+      "username": "vex",
+      "tests": 1,
+      "gamemodes": {
+        "nethop": 1
+      }
     }
   }
 }
