@@ -5,7 +5,13 @@
   "smp": [],
   "pot": [],
   "mace": [],
-  "nethop": [],
+  "nethop": [
+    {
+      "user_id": "1387833253347463458",
+      "username": "KairavOP",
+      "region": "AS"
+    }
+  ],
   "uhc": [],
   "spear": [],
   "vanilla_panel_message_id": 1563153224632893482,
@@ -238,11 +244,6 @@
       "region": "AS"
     },
     {
-      "user_id": "1419253388595695667",
-      "username": "Real_AsadYt",
-      "region": "AS"
-    },
-    {
       "user_id": "1493973356360241286",
       "username": "Am_Azure",
       "region": "AS"
@@ -270,11 +271,6 @@
     {
       "user_id": "1557401571795673162",
       "username": "Vijay_Rajput",
-      "region": "AS"
-    },
-    {
-      "user_id": "1387833253347463458",
-      "username": "KairavOP",
       "region": "AS"
     },
     {
@@ -1847,7 +1843,7 @@
       "region": "AS"
     }
   ],
-  "nethop_panel_message_id": 1563169877244776621,
+  "nethop_panel_message_id": 1563504142956363868,
   "smp_panel_message_id": 1563133113918554174,
   "uhc_panel_message_id": 1561627861348122685,
   "axe_panel_message_id": 1560256114078126182,
@@ -1862,5 +1858,9 @@
   "sword_closed_message_id": 1562825268052234304,
   "smp_closed_message_id": 1563145091755941891,
   "vanilla_closed_message_id": 1563160882186428447,
-  "nethop_closed_message_id": 1563171082888941599
+  "nethop_server": "Any",
+  "nethop_active_tester": "910769828997001268",
+  "nethop_currently_testing": [
+    "Real_AsadYt"
+  ]
 }
