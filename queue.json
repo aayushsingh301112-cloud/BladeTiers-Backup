@@ -7,16 +7,6 @@
   "mace": [],
   "nethop": [
     {
-      "user_id": "1305142990758744114",
-      "username": "TechGaming0668",
-      "region": "AS"
-    },
-    {
-      "user_id": "1244899517212397620",
-      "username": "BetterLuci_",
-      "region": "AS"
-    },
-    {
       "user_id": "1156558284522795018",
       "username": "MED_007",
       "region": "MEA"
@@ -291,6 +281,11 @@
     {
       "user_id": "1521867642925744228",
       "username": "NoobPlayer7",
+      "region": "AS"
+    },
+    {
+      "user_id": "1305142990758744114",
+      "username": "TechGaming0668",
       "region": "AS"
     }
   ],
@@ -1442,6 +1437,11 @@
       "user_id": "1464145500352548874",
       "username": "0zxy_",
       "region": "AS"
+    },
+    {
+      "user_id": "1361657169539371179",
+      "username": "CaptainArcc",
+      "region": "AS"
     }
   ],
   "uhc_waitlist": [
@@ -1866,6 +1866,6 @@
   "nethop_server": "Any",
   "nethop_active_tester": "910769828997001268",
   "nethop_currently_testing": [
-    "FrqndshIp"
+    "BetterLuci_"
   ]
 }
