@@ -5,23 +5,7 @@
   "smp": [],
   "pot": [],
   "mace": [],
-  "nethop": [
-    {
-      "user_id": "1156558284522795018",
-      "username": "MED_007",
-      "region": "MEA"
-    },
-    {
-      "user_id": "1151795622735790110",
-      "username": "JUTT_007",
-      "region": "AS"
-    },
-    {
-      "user_id": "1351536969934573610",
-      "username": "BlackBoltYT90",
-      "region": "AS"
-    }
-  ],
+  "nethop": [],
   "uhc": [],
   "spear": [],
   "vanilla_panel_message_id": 1563153224632893482,
@@ -1883,7 +1867,7 @@
       "region": "AS"
     }
   ],
-  "nethop_panel_message_id": 1563504142956363868,
+  "nethop_panel_message_id": 1563521442895896688,
   "smp_panel_message_id": 1563133113918554174,
   "uhc_panel_message_id": 1561627861348122685,
   "axe_panel_message_id": 1560256114078126182,
@@ -1898,9 +1882,9 @@
   "sword_closed_message_id": 1562825268052234304,
   "smp_closed_message_id": 1563145091755941891,
   "vanilla_closed_message_id": 1563160882186428447,
-  "nethop_server": "Any",
-  "nethop_active_tester": "910769828997001268",
   "nethop_currently_testing": [
-    "BetterLuci_"
-  ]
+    "MED_007",
+    "BlackBoltYT90"
+  ],
+  "nethop_closed_message_id": 1563521562609451100
 }
